@@ -1,1 +1,1 @@
-# unity-fab-importer
+# Quixel Importer for Unity
