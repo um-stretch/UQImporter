@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEditor;
+using System.IO;
+using System.IO.Compression;
 
 namespace UQImporter
 {
@@ -8,6 +10,9 @@ namespace UQImporter
         private static UQImporter_Main _window;
         private static Vector2 _windowMinSize = new Vector2(275, 300);
         private static Vector2 _scrollPosition = new Vector2();
+
+        private static string _zippedFileDirectory = "";
+        private static string _extractedFileDirectory = "";
 
         [MenuItem("Tools/Quixel Importer")]
         public static void OpenUQImporter()
@@ -25,8 +30,7 @@ namespace UQImporter
         private void OnGUI()
         {
             GUILayout.BeginScrollView(_scrollPosition);
-
-
+            
 
             GUILayout.EndScrollView();
         }
