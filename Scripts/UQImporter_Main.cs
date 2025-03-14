@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEditor;
+using System;
 using System.IO;
 using System.IO.Compression;
 
@@ -12,7 +13,8 @@ namespace UQImporter
         private static Vector2 _scrollPosition = new Vector2();
 
         private string _selectedFilePath = "";
-        private string _destinationPath = "";
+        private string _assetname = "";
+        private string _destinationPath = "Assets/";
 
         private static Texture2D _infoIcon;
 
@@ -71,7 +73,7 @@ namespace UQImporter
 
         private void DrawWindowContents()
         {
-            Object obj = Selection.activeObject;
+            UnityEngine.Object obj = Selection.activeObject;
             if (CheckValidSelectedObject(obj))
             {
                 DrawImporterGUI();
@@ -82,7 +84,7 @@ namespace UQImporter
             }
         }
 
-        private bool CheckValidSelectedObject(Object o)
+        private bool CheckValidSelectedObject(UnityEngine.Object o)
         {
             if (o == null) return false;
 
@@ -95,6 +97,7 @@ namespace UQImporter
             string objectFullPath = Path.GetFullPath(objectPath);
             if (Path.GetExtension(objectFullPath).Equals(".zip", System.StringComparison.OrdinalIgnoreCase))
             {
+                _selectedFilePath = objectFullPath;
                 return true;
             }
 
@@ -103,7 +106,50 @@ namespace UQImporter
 
         private void DrawImporterGUI()
         {
-            GUILayout.Label("Choose a destination for extracted files and click Import.", _centeredLabelStyle);
+            if (String.IsNullOrWhiteSpace(_assetname))
+            {
+                _assetname = Path.GetFileNameWithoutExtension(_selectedFilePath);
+            }
+            if (string.IsNullOrWhiteSpace(_destinationPath))
+            {
+                _destinationPath = "Assets/";
+            }
+
+            GUILayout.BeginVertical();
+
+            GUILayout.Label(new GUIContent("Asset Name: ", "Leave blank to use original file name."));
+            _assetname = EditorGUILayout.TextField(_assetname);
+
+            GUILayout.Label(new GUIContent("Destination Path:", "Location of the asset after importing."));
+            GUILayout.BeginHorizontal();
+            _destinationPath = EditorGUILayout.TextField(_destinationPath);
+            if (GUILayout.Button(new GUIContent("...", "Browse"), GUILayout.MaxWidth(25)))
+            {
+                _destinationPath = EditorUtility.OpenFolderPanel("Choose a destination for imported files", _destinationPath, "");
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.EndVertical();
+
+            GUILayout.Space(10);
+
+            if (GUILayout.Button(new GUIContent("Import Asset", "Extract, build, and import the selected asset file to the above destination."), GUILayout.MinHeight(30)))
+            {
+                try
+                {
+                    ExtractFiles();
+                }
+                catch(Exception exc)
+                {
+                    Debug.Log(exc);
+                }
+
+                AssetDatabase.Refresh();
+            }
+        }
+
+        private void ExtractFiles()
+        {
+            ZipFile.ExtractToDirectory(_selectedFilePath, _destinationPath);
         }
 
         private void DrawInvalidObjectGUI()
@@ -113,6 +159,9 @@ namespace UQImporter
             GUILayout.Label("Select a Quixel .zip file to get started.", _centeredLabelStyle);
             GUILayout.FlexibleSpace();
             GUILayout.EndVertical();
+
+            _assetname = "";
+            _destinationPath = "";
         }
 
         private void DrawFooter()
