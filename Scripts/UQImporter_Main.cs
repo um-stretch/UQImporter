@@ -14,7 +14,8 @@ namespace UQImporter
 
         private string _selectedFilePath = "";
         private string _assetname = "";
-        private string _destinationPath = "Assets/";
+        private string _destinationPath = "";
+        private string _defaultDestinationPath = "Assets/";
 
         private static Texture2D _infoIcon;
 
@@ -112,7 +113,7 @@ namespace UQImporter
             }
             if (string.IsNullOrWhiteSpace(_destinationPath))
             {
-                _destinationPath = "Assets/";
+                _destinationPath = _defaultDestinationPath;
             }
 
             GUILayout.BeginVertical();
