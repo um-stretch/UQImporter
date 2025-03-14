@@ -38,10 +38,10 @@ namespace UQImporter
 
         private static GUIStyle _centeredLabelStyle;
 
-        [MenuItem("Tools/Quixel Importer")]
+        [MenuItem("Tools/Untiy Quixel Importer")]
         public static void OpenUQImporter()
         {
-            _window = (UQImporter_Main)GetWindow(typeof(UQImporter_Main), false, "Quixel Importer");
+            _window = (UQImporter_Main)GetWindow(typeof(UQImporter_Main), false, "UQImporter");
             _window.minSize = _windowMinSize;
 
             if (_window)
@@ -124,7 +124,7 @@ namespace UQImporter
 
         private void DrawImporterGUI()
         {
-            var name = _assetname;
+            var aname = _assetname;
 
             if (String.IsNullOrWhiteSpace(_assetname))
             {
@@ -150,7 +150,7 @@ namespace UQImporter
                 _destinationPath = EditorUtility.OpenFolderPanel("Choose a destination for imported files", _destinationPath, "");
 
             }
-            if (_useNameForDestinationFolder && name != _assetname)
+            if (_useNameForDestinationFolder && aname != _assetname)
             {
                 _destinationPath = _defaultDestinationPath;
                 _destinationPath += "/" + _assetname;
@@ -234,7 +234,7 @@ namespace UQImporter
 
         private void CacheTexture(string key, Texture2D texture)
         {
-            if(!_textures.ContainsKey(key))
+            if (!_textures.ContainsKey(key))
             {
                 _textures.Add(key, texture);
             }
@@ -242,7 +242,7 @@ namespace UQImporter
 
         private void CreateMaterial()
         {
-            
+
         }
 
 
