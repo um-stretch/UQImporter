@@ -3,6 +3,7 @@ using UnityEditor;
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Collections.Generic;
 
 namespace UQImporter
 {
@@ -19,6 +20,7 @@ namespace UQImporter
         private string _defaultDestinationPath = "Assets/Quixel";
 
         private string[] _extractedFilePaths;
+        private Dictionary<string, Texture2D> _textures = new Dictionary<string, Texture2D>();
         private string[] _textureKeys = new string[]
         {
             "AO",
@@ -147,7 +149,7 @@ namespace UQImporter
                 _destinationPath = EditorUtility.OpenFolderPanel("Choose a destination for imported files", _destinationPath, "");
 
             }
-            if(_useNameForDestinationFolder && name != _assetname)
+            if (_useNameForDestinationFolder && name != _assetname)
             {
                 _destinationPath = _defaultDestinationPath;
                 _destinationPath += "/" + _assetname;
@@ -201,16 +203,25 @@ namespace UQImporter
         {
             foreach (string filePath in _extractedFilePaths)
             {
-                foreach (string key in _textureKeys)
-                {
-                    if (filePath.Contains(key))
-                    {
-                        string fileExt = Path.GetExtension(filePath);
-                        string newName = _assetname + "_" + key + fileExt;
+                string newName = Path.GetFileName(filePath);
+                string fileExt = Path.GetExtension(filePath);
 
-                        AssetDatabase.RenameAsset(filePath, newName);
+                if (fileExt.Equals(".fbx", StringComparison.OrdinalIgnoreCase))
+                {
+                    newName = _assetname + fileExt;
+                }
+                else
+                {
+                    foreach (string tkey in _textureKeys)
+                    {
+                        if (filePath.Contains(tkey))
+                        {
+                            newName = _assetname + "_" + tkey + fileExt;
+                        }
                     }
                 }
+
+                AssetDatabase.RenameAsset(filePath, newName);
             }
         }
 
