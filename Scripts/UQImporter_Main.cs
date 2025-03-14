@@ -183,10 +183,6 @@ namespace UQImporter
 
         private void ExtractFiles()
         {
-            if (_useNameForDestinationFolder)
-            {
-                _destinationPath += "/" + _assetname;
-            }
             ZipFile.ExtractToDirectory(_selectedFilePath, _destinationPath);
         }
 
