@@ -3,6 +3,8 @@ using UnityEditor;
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
+using UnityEngine.InputSystem.Interactions;
 
 namespace UQImporter
 {
@@ -15,7 +17,22 @@ namespace UQImporter
         private string _selectedFilePath = "";
         private string _assetname = "";
         private string _destinationPath = "";
-        private string _defaultDestinationPath = "Assets/";
+        private bool _useNameForDestinationFolder = true;
+        private string _defaultDestinationPath = "Assets/Quixel";
+
+        private string[] _extractedFilePaths;
+        private string[] _textureKeys = new string[]
+        {
+            "AO",
+            "BaseColor",
+            "Bump",
+            "Cavity",
+            "Diffuse",
+            "Metalness",
+            "Normal",
+            "Roughness",
+            "Specular",
+        };
 
         private static Texture2D _infoIcon;
 
@@ -121,27 +138,39 @@ namespace UQImporter
             GUILayout.Label(new GUIContent("Asset Name: "), EditorStyles.boldLabel);
             _assetname = EditorGUILayout.TextField(_assetname);
 
+            GUILayout.Space(10);
+
             GUILayout.Label(new GUIContent("Destination Path:", "Location of asset after importing."), EditorStyles.boldLabel);
             GUILayout.BeginHorizontal();
             _destinationPath = EditorGUILayout.TextField(_destinationPath);
             if (GUILayout.Button(new GUIContent("...", "Browse"), GUILayout.MaxWidth(25)))
             {
                 _destinationPath = EditorUtility.OpenFolderPanel("Choose a destination for imported files", _destinationPath, "");
+
             }
             GUILayout.EndHorizontal();
+            _useNameForDestinationFolder = GUILayout.Toggle(_useNameForDestinationFolder, new GUIContent("Use Name for Folder", "If enabled, a folder will be created at the destination directory using the asset's name."));
             GUILayout.EndVertical();
 
-            GUILayout.Space(10);
+            GUILayout.Space(20);
 
             if (GUILayout.Button(new GUIContent("Import Asset", "Extract, build, and import the selected asset to the above destination."), GUILayout.MinHeight(30)))
             {
                 try
                 {
                     ExtractFiles();
+                    CacheExtractedFiles();
+                    RenameFiles();
+                    // Parse for textures
+                    // Create material and assign textures
+                    // Assign material to model
+                    // Reimport model as prefab
+
+
                 }
-                catch(Exception exc)
+                catch (Exception exc)
                 {
-                    Debug.LogError($"Import failed: {exc}");
+                    Debug.LogError($"Import failed! {exc}");
                 }
 
                 AssetDatabase.Refresh();
@@ -150,8 +179,41 @@ namespace UQImporter
 
         private void ExtractFiles()
         {
+            if(_useNameForDestinationFolder)
+            {
+                _destinationPath += "/" + _assetname;
+            }
             ZipFile.ExtractToDirectory(_selectedFilePath, _destinationPath);
         }
+
+        private void CacheExtractedFiles()
+        {
+            _extractedFilePaths = Directory.GetFiles(_destinationPath);
+            for (int i = 0; i < _extractedFilePaths.Length; i++)
+            {
+                string relativePath = _extractedFilePaths[i].Replace(Application.dataPath, "Assets").Replace("\\", "/");
+                _extractedFilePaths[i] = relativePath;
+                AssetDatabase.ImportAsset(_extractedFilePaths[i]);
+            }
+        }
+
+        private void RenameFiles()
+        {
+            foreach (string filePath in _extractedFilePaths)
+            {
+                foreach (string key in _textureKeys)
+                {
+                    if (filePath.Contains(key))
+                    {
+                        string fileExt = Path.GetExtension(filePath);
+                        string newName = _assetname + "_" + key + fileExt;
+
+                        AssetDatabase.RenameAsset(filePath, newName);
+                    }
+                }
+            }
+        }
+
 
         private void DrawInvalidObjectGUI()
         {
