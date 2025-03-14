@@ -124,6 +124,8 @@ namespace UQImporter
 
         private void DrawImporterGUI()
         {
+            var name = _assetname;
+
             if (String.IsNullOrWhiteSpace(_assetname))
             {
                 _assetname = Path.GetFileNameWithoutExtension(_selectedFilePath);
@@ -135,7 +137,6 @@ namespace UQImporter
 
             GUILayout.BeginVertical();
 
-            var name = _assetname;
             GUILayout.Label(new GUIContent("Asset Name: "), EditorStyles.boldLabel);
             _assetname = EditorGUILayout.TextField(_assetname);
 
@@ -164,13 +165,13 @@ namespace UQImporter
             {
                 try
                 {
+                    ClearCachedTextures();
                     ExtractFiles();
                     CacheExtractedFiles();
                     RenameFiles();
-                    // Parse for textures
                     // Create material and assign textures
                     // Assign material to model
-                    // Reimport model as prefab
+                    // Save model as prefab
 
 
                 }
@@ -181,6 +182,11 @@ namespace UQImporter
 
                 AssetDatabase.Refresh();
             }
+        }
+
+        private void ClearCachedTextures()
+        {
+            _textures.Clear();
         }
 
         private void ExtractFiles()
@@ -217,12 +223,26 @@ namespace UQImporter
                         if (filePath.Contains(tkey))
                         {
                             newName = _assetname + "_" + tkey + fileExt;
+                            CacheTexture(tkey, (Texture2D)AssetDatabase.LoadAssetAtPath(filePath, typeof(Texture2D)));
                         }
                     }
                 }
 
                 AssetDatabase.RenameAsset(filePath, newName);
             }
+        }
+
+        private void CacheTexture(string key, Texture2D texture)
+        {
+            if(!_textures.ContainsKey(key))
+            {
+                _textures.Add(key, texture);
+            }
+        }
+
+        private void CreateMaterial()
+        {
+            
         }
 
 
