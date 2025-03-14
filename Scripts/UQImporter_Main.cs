@@ -13,6 +13,9 @@ namespace UQImporter
         private static Vector2 _windowMinSize = new Vector2(275, 300);
         private static Vector2 _scrollPosition = new Vector2();
 
+        private string _contextLabel;
+        private bool _logContext;
+
         private string _selectedFilePath = "";
         private string _assetname = "";
         private string _destinationPath = "";
@@ -33,6 +36,8 @@ namespace UQImporter
             "Roughness",
             "Specular",
         };
+
+        private Material _assetMat;
 
         private static Texture2D _infoIcon;
 
@@ -125,6 +130,7 @@ namespace UQImporter
         private void DrawImporterGUI()
         {
             var aname = _assetname;
+            _contextLabel = "Adjust settings and import.";
 
             if (String.IsNullOrWhiteSpace(_assetname))
             {
@@ -156,7 +162,11 @@ namespace UQImporter
                 _destinationPath += "/" + _assetname;
             }
             GUILayout.EndHorizontal();
-            _useNameForDestinationFolder = GUILayout.Toggle(_useNameForDestinationFolder, new GUIContent("Use Name for Folder", "If enabled, a folder will be created at the destination directory using the asset's name."));
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(new GUIContent("Use Name for Folder", "If enabled, a folder will be created at the destination directory using the asset's name."));
+            _useNameForDestinationFolder = GUILayout.Toggle(_useNameForDestinationFolder, "", GUILayout.MinWidth(60), GUILayout.MaxWidth(60));
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
             GUILayout.EndVertical();
 
             GUILayout.Space(20);
@@ -169,7 +179,7 @@ namespace UQImporter
                     ExtractFiles();
                     CacheExtractedFiles();
                     RenameFiles();
-                    // Create material and assign textures
+                    CreateMaterial();
                     // Assign material to model
                     // Save model as prefab
 
@@ -186,16 +196,20 @@ namespace UQImporter
 
         private void ClearCachedTextures()
         {
+            LogContext("Clearing cache...");
             _textures.Clear();
         }
 
         private void ExtractFiles()
         {
+            LogContext("Extracting files....");
             ZipFile.ExtractToDirectory(_selectedFilePath, _destinationPath);
         }
 
         private void CacheExtractedFiles()
         {
+            LogContext("Caching extracted files...");
+
             _extractedFilePaths = Directory.GetFiles(_destinationPath);
             for (int i = 0; i < _extractedFilePaths.Length; i++)
             {
@@ -207,6 +221,8 @@ namespace UQImporter
 
         private void RenameFiles()
         {
+            LogContext("Renaming files...");
+
             foreach (string filePath in _extractedFilePaths)
             {
                 string newName = Path.GetFileName(filePath);
@@ -234,6 +250,8 @@ namespace UQImporter
 
         private void CacheTexture(string key, Texture2D texture)
         {
+            LogContext("Caching textures...");
+
             if (!_textures.ContainsKey(key))
             {
                 _textures.Add(key, texture);
@@ -242,15 +260,18 @@ namespace UQImporter
 
         private void CreateMaterial()
         {
+            LogContext("Creating material and assigning textures...");
+
+            _assetMat = new Material(Shader.Find("Standard"));
 
         }
 
-
         private void DrawInvalidObjectGUI()
         {
+            _contextLabel = "Select a Quixel .zip file to get started.";
             GUILayout.BeginVertical();
             GUILayout.FlexibleSpace();
-            GUILayout.Label("Select a Quixel .zip file to get started.", _centeredLabelStyle);
+            DrawContextLabel();
             GUILayout.FlexibleSpace();
             GUILayout.EndVertical();
 
@@ -267,6 +288,19 @@ namespace UQImporter
                 Application.OpenURL("https://github.com/um-stretch/unity-quixel-importer/");
             }
             GUILayout.EndArea();
+        }
+
+        private void LogContext(string context)
+        {
+            if (_logContext)
+            {
+                Debug.Log(context);
+            }
+        }
+
+        private void DrawContextLabel()
+        {
+            GUILayout.Label(_contextLabel, _centeredLabelStyle);
         }
     }
 }
