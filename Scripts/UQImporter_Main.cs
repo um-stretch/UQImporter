@@ -133,6 +133,7 @@ namespace UQImporter
 
             GUILayout.BeginVertical();
 
+            var name = _assetname;
             GUILayout.Label(new GUIContent("Asset Name: "), EditorStyles.boldLabel);
             _assetname = EditorGUILayout.TextField(_assetname);
 
@@ -145,6 +146,11 @@ namespace UQImporter
             {
                 _destinationPath = EditorUtility.OpenFolderPanel("Choose a destination for imported files", _destinationPath, "");
 
+            }
+            if(_useNameForDestinationFolder && name != _assetname)
+            {
+                _destinationPath = _defaultDestinationPath;
+                _destinationPath += "/" + _assetname;
             }
             GUILayout.EndHorizontal();
             _useNameForDestinationFolder = GUILayout.Toggle(_useNameForDestinationFolder, new GUIContent("Use Name for Folder", "If enabled, a folder will be created at the destination directory using the asset's name."));
@@ -177,7 +183,7 @@ namespace UQImporter
 
         private void ExtractFiles()
         {
-            if(_useNameForDestinationFolder)
+            if (_useNameForDestinationFolder)
             {
                 _destinationPath += "/" + _assetname;
             }
