@@ -118,10 +118,10 @@ namespace UQImporter
 
             GUILayout.BeginVertical();
 
-            GUILayout.Label(new GUIContent("Asset Name: ", "Leave blank to use original file name."));
+            GUILayout.Label(new GUIContent("Asset Name: "));
             _assetname = EditorGUILayout.TextField(_assetname);
 
-            GUILayout.Label(new GUIContent("Destination Path:", "Location of the asset after importing."));
+            GUILayout.Label(new GUIContent("Destination Path:", "Location of asset after importing."));
             GUILayout.BeginHorizontal();
             _destinationPath = EditorGUILayout.TextField(_destinationPath);
             if (GUILayout.Button(new GUIContent("...", "Browse"), GUILayout.MaxWidth(25)))
@@ -133,7 +133,7 @@ namespace UQImporter
 
             GUILayout.Space(10);
 
-            if (GUILayout.Button(new GUIContent("Import Asset", "Extract, build, and import the selected asset file to the above destination."), GUILayout.MinHeight(30)))
+            if (GUILayout.Button(new GUIContent("Import Asset", "Extract, build, and import the selected asset to the above destination."), GUILayout.MinHeight(30)))
             {
                 try
                 {
