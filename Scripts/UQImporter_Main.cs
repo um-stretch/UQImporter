@@ -118,10 +118,10 @@ namespace UQImporter
 
             GUILayout.BeginVertical();
 
-            GUILayout.Label(new GUIContent("Asset Name: "));
+            GUILayout.Label(new GUIContent("Asset Name: "), EditorStyles.boldLabel);
             _assetname = EditorGUILayout.TextField(_assetname);
 
-            GUILayout.Label(new GUIContent("Destination Path:", "Location of asset after importing."));
+            GUILayout.Label(new GUIContent("Destination Path:", "Location of asset after importing."), EditorStyles.boldLabel);
             GUILayout.BeginHorizontal();
             _destinationPath = EditorGUILayout.TextField(_destinationPath);
             if (GUILayout.Button(new GUIContent("...", "Browse"), GUILayout.MaxWidth(25)))
@@ -141,7 +141,7 @@ namespace UQImporter
                 }
                 catch(Exception exc)
                 {
-                    Debug.Log(exc);
+                    Debug.LogError($"Import failed: {exc}");
                 }
 
                 AssetDatabase.Refresh();
