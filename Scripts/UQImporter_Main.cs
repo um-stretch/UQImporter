@@ -4,7 +4,9 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using System.Collections.Generic;
+using UnityEngine.Rendering;
 
+#if UNITY_EDITOR
 namespace UQImporter
 {
     public class UQImporter_Main : EditorWindow
@@ -181,12 +183,14 @@ namespace UQImporter
         private void ClearCachedTextures()
         {
             _textures.Clear();
+            
             LogContext("Clearing cache...OK");
         }
 
         private void ExtractFiles()
         {
             ZipFile.ExtractToDirectory(_selectedFilePath, _destinationPath);
+
             LogContext("Extracting files...OK");
         }
 
@@ -199,6 +203,7 @@ namespace UQImporter
                 _extractedFilePaths[i] = relativePath;
                 AssetDatabase.ImportAsset(_extractedFilePaths[i]);
             }
+
             LogContext("Caching extracted files...OK");
         }
 
@@ -226,6 +231,7 @@ namespace UQImporter
                 }
 
                 AssetDatabase.RenameAsset(filePath, newName);
+
                 LogContext("Renaming files...OK");
             }
         }
@@ -236,13 +242,46 @@ namespace UQImporter
             {
                 _textures.Add(key, texture);
             }
+
             LogContext("Caching textures...OK");
         }
 
         private void CreateMaterial()
         {
-            _assetMat = new Material(Shader.Find("Standard"));
+            int renderPipeline = CheckRenderPipelineType();
+
+            switch (renderPipeline)
+            {
+                case 0:
+                    _assetMat = new Material(Shader.Find("Standard/Lit"));
+                    break;
+                case 1:
+                    _assetMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                    break;
+                case 2:
+                    _assetMat = new Material(Shader.Find("HDRP/Lit"));
+                    break;
+            }
+
+
+            AssetDatabase.CreateAsset(_assetMat, $"{_destinationPath}/NewMat.mat");
+            AssetDatabase.SaveAssets();
+
             LogContext("Creating material and assigning textures...OK");
+        }
+
+        private int CheckRenderPipelineType()
+        {
+            if (GraphicsSettings.currentRenderPipeline.GetType().FullName.Contains("HDRenderPipelineAsset"))
+            {
+                return 2;
+            }
+            else if (GraphicsSettings.currentRenderPipeline.GetType().FullName.Contains("UniversalRenderPipelineAsset"))
+            {
+                return 1;
+            }
+
+            return 0;
         }
 
         private void DrawInvalidObjectGUI()
@@ -298,7 +337,6 @@ namespace UQImporter
                 _window.maxSize = _windowMinSize;
                 _window.minSize = _windowMinSize;
 
-                // Open window at cursor position 
                 Vector2 mousePos = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
                 _window.position = new Rect(mousePos.x, mousePos.y, _window.position.width, _window.position.height);
             }
@@ -345,7 +383,6 @@ namespace UQImporter
             "Roughness",
             "Specular",
         };
-
 
         public static UserConfig LoadUserConfig()
         {
@@ -397,3 +434,4 @@ namespace UQImporter
         }
     }
 }
+#endif
