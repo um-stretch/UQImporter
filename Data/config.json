@@ -13,7 +13,10 @@
         "Roughness",
         "Specular"
     ],
+    "logCompletionTime": true,
+    "pingImportedAsset": true,
     "logContext": false,
     "cleanDirectory": true,
-    "enableMultithreading": false
+    "deleteZipFile": false,
+    "enableMultithreading": true
 }

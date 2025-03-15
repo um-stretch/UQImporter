@@ -151,11 +151,6 @@ namespace UQImporter
                 _destinationPath += "/" + _assetname;
             }
             GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(new GUIContent("Use Name for Folder", "If enabled, a folder will be created at the destination directory using the asset's name."));
-            config.useNameForDestinationFolder = GUILayout.Toggle(config.useNameForDestinationFolder, "", GUILayout.MinWidth(60), GUILayout.MaxWidth(60));
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
             GUILayout.EndVertical();
 
             GUILayout.FlexibleSpace();
@@ -185,6 +180,8 @@ namespace UQImporter
 
                 AssetDatabase.Refresh();
                 if (config.pingImportedAsset) EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<Object>($"{_destinationPath}/{_assetname}.prefab"));
+
+                ClearCache();
             }
         }
 
@@ -256,6 +253,7 @@ namespace UQImporter
                             newName = _assetname + "_" + tkey + fileExt;
                             TextureImporter tImporter = (TextureImporter)AssetImporter.GetAtPath(filePath);
                             tImporter.isReadable = true;
+                            tImporter.maxTextureSize = 8192;
                             if (newName.Contains("_Normal"))
                             {
                                 tImporter.textureType = TextureImporterType.NormalMap;
@@ -393,6 +391,7 @@ namespace UQImporter
             switch (textureKey)
             {
                 case "BaseColor": return "_BaseColorMap";
+                case "Bump": return "_HeightMap";
                 case "Normal": return "_NormalMap";
                 default: return null;
             }
@@ -467,6 +466,7 @@ namespace UQImporter
             _modelInstance = (GameObject)PrefabUtility.InstantiatePrefab(model);
 
             Renderer r = _modelInstance.GetComponent<Renderer>();
+            if (r == null) _modelInstance.GetComponentInChildren<Renderer>();
             r.material = _assetMat;
 
             LogContext("Attach material...OK");
@@ -507,6 +507,17 @@ namespace UQImporter
                 }
             }
 
+            if (config.deleteZipFile)
+            {
+                string path = _selectedFilePath;
+                string kw = Application.dataPath;
+                int index = path.IndexOf(kw);
+
+                string relativePath = path.Substring(index + kw.Length + 2);
+                relativePath = Path.Combine("Assets", relativePath).Replace("\\", "/");
+                AssetDatabase.DeleteAsset(relativePath);
+            }
+
             LogContext("Clean directory...OK");
         }
 
@@ -522,6 +533,19 @@ namespace UQImporter
 
             newPath = $"{newPath}/{Path.GetFileName(file)}";
             AssetDatabase.MoveAsset(file, newPath);
+        }
+
+        private void ClearCache()
+        {
+            _selectedFilePath = "";
+            _assetname = "";
+            _destinationPath = "";
+            _extractedFilePaths = null;
+            _modelInstance = null;
+            _textures = new Dictionary<string, Texture2D>();
+            _assetMat = null;
+
+            LogContext("Clear cache...OK");
         }
 
         private void DrawInvalidObjectGUI()
@@ -632,6 +656,7 @@ namespace UQImporter
         public bool pingImportedAsset = true;
         public bool logContext = false;
         public bool cleanDirectory = true;
+        public bool deleteZipFile = true;
         public bool enableMultithreading = false;
 
         public static UserConfig LoadUserConfig()
