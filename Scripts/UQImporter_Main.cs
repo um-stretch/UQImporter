@@ -401,15 +401,30 @@ namespace UQImporter
             Texture2D maskMap = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false);
             Color[] maskPixels = new Color[resolution * resolution];
 
-            System.Threading.Tasks.Parallel.For(0, resolution * resolution, i =>
+            if (_config.useParallelProcessing)
             {
-                float metallic = metallicPixels[i].grayscale;
-                float occlusion = occlusionPixels[i].grayscale;
-                float detail = detailPixels[i].grayscale;
-                float smoothness = smoothnessPixels[i].grayscale;
+                System.Threading.Tasks.Parallel.For(0, resolution * resolution, i =>
+                {
+                    float metallic = metallicPixels[i].grayscale;
+                    float occlusion = occlusionPixels[i].grayscale;
+                    float detail = detailPixels[i].grayscale;
+                    float smoothness = smoothnessPixels[i].grayscale;
 
-                maskPixels[i] = new Color(metallic, occlusion, detail, smoothness);
-            });
+                    maskPixels[i] = new Color(metallic, occlusion, detail, smoothness);
+                });
+            }
+            else
+            {
+                for (int i = 0; i < resolution * resolution; i++)
+                {
+                    float metallic = metallicPixels[i].grayscale;
+                    float occlusion = occlusionPixels[i].grayscale;
+                    float detail = detailPixels[i].grayscale;
+                    float smoothness = smoothnessPixels[i].grayscale;
+
+                    maskPixels[i] = new Color(metallic, occlusion, detail, smoothness);
+                }
+            }
 
             maskMap.SetPixels(maskPixels);
             maskMap.Apply();
@@ -452,7 +467,6 @@ namespace UQImporter
 
             LogContext("Save prefab...OK");
         }
-
 
         private void CleanDirectory()
         {
@@ -585,8 +599,6 @@ namespace UQImporter
         public string defaultDestinationPath = "Assets/Quixel";
         public bool useNameForDestinationFolder = true;
         public bool doubleSidedMaterial = true;
-        public bool logContext = false;
-        public bool cleanDirectory = true;
         public string[] textureKeys = new string[]
         {
             "AO",
@@ -598,6 +610,9 @@ namespace UQImporter
             "Roughness",
             "Specular",
         };
+        public bool logContext = false;
+        public bool cleanDirectory = true;
+        public bool useParallelProcessing = false;
 
         public static UserConfig LoadUserConfig()
         {
