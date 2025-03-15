@@ -217,8 +217,9 @@ namespace UQImporter
             {
                 string relativePath = _extractedFilePaths[i].Replace(Application.dataPath, "Assets").Replace("\\", "/");
                 _extractedFilePaths[i] = relativePath;
-                AssetDatabase.ImportAsset(_extractedFilePaths[i]);
             }
+
+            AssetDatabase.Refresh();
 
             LogContext("Cache extracted files...OK");
         }
@@ -401,7 +402,7 @@ namespace UQImporter
             Texture2D maskMap = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false);
             Color[] maskPixels = new Color[resolution * resolution];
 
-            if (_config.useParallelProcessing)
+            if (_config.enableMultithreading)
             {
                 System.Threading.Tasks.Parallel.For(0, resolution * resolution, i =>
                 {
@@ -432,7 +433,7 @@ namespace UQImporter
             byte[] maskMapBytes = maskMap.EncodeToPNG();
             string path = $"{_destinationPath}/{_assetname}_MaskMap.png";
             File.WriteAllBytes(path, maskMapBytes);
-            AssetDatabase.ImportAsset(path);
+            AssetDatabase.Refresh();
 
             LogContext("Generate maskMap...OK");
         }
@@ -442,7 +443,7 @@ namespace UQImporter
             string path = $"{_destinationPath}/{_assetname}.fbx";
             ModelImporter mImporter = (ModelImporter)AssetImporter.GetAtPath(path);
             mImporter.materialImportMode = ModelImporterMaterialImportMode.None;
-            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+            AssetDatabase.Refresh();
 
             LogContext("Update model importer...OK");
         }
@@ -612,7 +613,7 @@ namespace UQImporter
         };
         public bool logContext = false;
         public bool cleanDirectory = true;
-        public bool useParallelProcessing = false;
+        public bool enableMultithreading = false;
 
         public static UserConfig LoadUserConfig()
         {

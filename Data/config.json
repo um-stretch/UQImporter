@@ -3,8 +3,6 @@
     "defaultDestinationPath": "Assets/Quixel",
     "useNameForDestinationFolder": true,
     "doubleSidedMaterial": true,
-    "logContext": false,
-    "cleanDirectory": true,
     "textureKeys": [
         "AO",
         "BaseColor",
@@ -14,5 +12,8 @@
         "Normal",
         "Roughness",
         "Specular"
-    ]
+    ],
+    "logContext": false,
+    "cleanDirectory": true,
+    "useParallelProcessing": true
 }
