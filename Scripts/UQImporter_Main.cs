@@ -12,14 +12,14 @@ namespace UQImporter
     public class UQImporter_Main : EditorWindow
     {
         private static UQImporter_Main _window = null;
-        private static Vector2 _windowMinSize = new Vector2(275, 300);
+        private static Vector2 _windowMinSize = new Vector2(275, 225);
         private static Vector2 _scrollPosition = new Vector2();
         private static Texture2D _moreIcon;
         private static GUIStyle _centeredLabelStyle;
         private string _contextLabel = "";
         private Object _selection;
 
-        private static UserConfig _config;
+        public static UserConfig config { get; private set; }
         private int _renderPipeline = 0;
 
         private string _selectedFilePath = "";
@@ -42,7 +42,7 @@ namespace UQImporter
                 _window.maxSize = new Vector2(10000, 10000);
             }
 
-            _config = UserConfig.LoadUserConfig();
+            config = UserConfig.LoadUserConfig();
 
             GetIcons();
             RegisterGUIStyles();
@@ -55,7 +55,7 @@ namespace UQImporter
                 OpenUQImporter();
             }
 
-            Rect contentsRect = new Rect(0, 8, _window.position.width, _window.position.height - 38);
+            Rect contentsRect = new Rect(0, 8, _window.position.width, _window.position.height - 32);
             GUILayout.BeginArea(contentsRect);
             _scrollPosition = GUILayout.BeginScrollView(_scrollPosition);
 
@@ -127,7 +127,7 @@ namespace UQImporter
             }
             if (string.IsNullOrWhiteSpace(_destinationPath))
             {
-                _destinationPath = _config.defaultDestinationPath;
+                _destinationPath = config.defaultDestinationPath;
             }
 
             GUILayout.BeginVertical();
@@ -145,22 +145,22 @@ namespace UQImporter
                 _destinationPath = EditorUtility.OpenFolderPanel("Choose a destination for imported files", _destinationPath, "");
 
             }
-            if (_config.useNameForDestinationFolder)
+            if (config.useNameForDestinationFolder)
             {
-                _destinationPath = _config.defaultDestinationPath;
+                _destinationPath = config.defaultDestinationPath;
                 _destinationPath += "/" + _assetname;
             }
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             GUILayout.Label(new GUIContent("Use Name for Folder", "If enabled, a folder will be created at the destination directory using the asset's name."));
-            _config.useNameForDestinationFolder = GUILayout.Toggle(_config.useNameForDestinationFolder, "", GUILayout.MinWidth(60), GUILayout.MaxWidth(60));
+            config.useNameForDestinationFolder = GUILayout.Toggle(config.useNameForDestinationFolder, "", GUILayout.MinWidth(60), GUILayout.MaxWidth(60));
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
 
-            GUILayout.Space(20);
+            GUILayout.FlexibleSpace();
 
-            if (GUILayout.Button(new GUIContent("Import Asset", "Extract, build, and import the selected asset to the above destination."), GUILayout.MinHeight(30)))
+            if (GUILayout.Button(new GUIContent("Import Asset", "Extract, build, and import the selected asset to the above destination."), GUILayout.MinHeight(40)))
             {
                 try
                 {
@@ -176,7 +176,7 @@ namespace UQImporter
                     SavePrefab();
                     CleanDirectory();
 
-                    if(_config.logCompletionTime) Debug.Log($"Import successful. Completed in {System.Math.Round(EditorApplication.timeSinceStartup - s, 2)} seconds.");
+                    if (config.logCompletionTime) Debug.Log($"Import successful. Completed in {System.Math.Round(EditorApplication.timeSinceStartup - s, 2)} seconds.");
                 }
                 catch (System.Exception e)
                 {
@@ -184,7 +184,7 @@ namespace UQImporter
                 }
 
                 AssetDatabase.Refresh();
-                if(_config.pingImportedAsset) EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<Object>($"{_destinationPath}/{_assetname}.prefab"));
+                if (config.pingImportedAsset) EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<Object>($"{_destinationPath}/{_assetname}.prefab"));
             }
         }
 
@@ -249,7 +249,7 @@ namespace UQImporter
                 }
                 else
                 {
-                    foreach (string tkey in _config.textureKeys)
+                    foreach (string tkey in config.textureKeys)
                     {
                         if (filePath.Contains(tkey))
                         {
@@ -319,7 +319,7 @@ namespace UQImporter
                 _assetMat.SetTexture("_MaskMap", maskMap);
             }
 
-            if (_config.doubleSidedMaterial)
+            if (config.doubleSidedMaterial)
             {
                 switch (_renderPipeline)
                 {
@@ -414,7 +414,7 @@ namespace UQImporter
             Texture2D maskMap = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false);
             Color[] maskPixels = new Color[resolution * resolution];
 
-            if (_config.enableMultithreading)
+            if (config.enableMultithreading)
             {
                 System.Threading.Tasks.Parallel.For(0, resolution * resolution, i =>
                 {
@@ -550,7 +550,7 @@ namespace UQImporter
 
         private void LogContext(string context)
         {
-            if (_config.logContext)
+            if (config.logContext)
             {
                 Debug.Log(context);
             }
@@ -565,7 +565,7 @@ namespace UQImporter
     public class UQImporter_More : EditorWindow
     {
         private static UQImporter_More _window;
-        private static Vector2 _windowMinSize = new Vector2(150, 100);
+        private static Vector2 _windowMinSize = new Vector2(150, 75);
 
         public static void OpenWindow()
         {
@@ -584,12 +584,18 @@ namespace UQImporter
 
         private void OnGUI()
         {
+            GUILayout.Space(5);
             if (GUILayout.Button(new GUIContent("View repository", "Open UQImporter's repository page.")))
             {
                 Application.OpenURL("https://github.com/um-stretch/UQImporter/");
             }
-            GUILayout.Space(10);
-            if (GUILayout.Button(new GUIContent("Create new config", "Create a new config file if the origianl is missing or deleted.")))
+            GUILayout.Space(5);
+
+            if (GUILayout.Button(new GUIContent("Ping config file", "Ping config file in the project panel.")))
+            {
+                EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<Object>($"{UQImporter_Main.config.pathToUQImporter}/Data/config.json"));
+            }
+            if (GUILayout.Button(new GUIContent("Create new config file", "Create a new config file if the origianl is missing or deleted.")))
             {
                 if (EditorUtility.DisplayDialog("Create new configuration file", "Previous configuration file (config.json) will be lost.\n\nContinue?", "Yes", "Cancel"))
                 {
