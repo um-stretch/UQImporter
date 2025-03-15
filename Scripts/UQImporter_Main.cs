@@ -1,10 +1,10 @@
 using UnityEngine;
 using UnityEditor;
-using System;
 using System.IO;
 using System.IO.Compression;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
+using Unity.VisualScripting;
 
 #if UNITY_EDITOR
 namespace UQImporter
@@ -19,6 +19,7 @@ namespace UQImporter
         private string _contextLabel = "";
 
         private static UserConfig _config;
+        private int _renderPipeline = 0;
 
         private string _selectedFilePath = "";
         private string _assetname = "";
@@ -82,7 +83,7 @@ namespace UQImporter
 
         private void DrawWindowContents()
         {
-            UnityEngine.Object obj = Selection.activeObject;
+            Object obj = Selection.activeObject;
             if (CheckValidSelectedObject(obj))
             {
                 DrawImporterGUI();
@@ -93,7 +94,7 @@ namespace UQImporter
             }
         }
 
-        private bool CheckValidSelectedObject(UnityEngine.Object o)
+        private bool CheckValidSelectedObject(Object o)
         {
             if (o == null) return false;
 
@@ -118,7 +119,7 @@ namespace UQImporter
             var aname = _assetname;
             _contextLabel = "Adjust settings and import.";
 
-            if (String.IsNullOrWhiteSpace(_assetname))
+            if (System.String.IsNullOrWhiteSpace(_assetname))
             {
                 _assetname = Path.GetFileNameWithoutExtension(_selectedFilePath);
             }
@@ -160,12 +161,14 @@ namespace UQImporter
             if (GUILayout.Button(new GUIContent("Import Asset", "Extract, build, and import the selected asset to the above destination."), GUILayout.MinHeight(30)))
             {
                 ClearCachedTextures();
+                _renderPipeline = 2; //GetRenderPipelineType();
                 ExtractFiles();
                 CacheExtractedFiles();
                 RenameFiles();
                 CreateMaterial();
-                // Assign material to model
-                // Save model as prefab
+                UpdateModelImporter();
+                AttachMaterial();
+                SavePrefab();
 
                 AssetDatabase.Refresh();
             }
@@ -176,6 +179,20 @@ namespace UQImporter
             _textures.Clear();
 
             LogContext("Clearing cache...OK");
+        }
+
+        private int GetRenderPipelineType()
+        {
+            if (GraphicsSettings.currentRenderPipeline.GetType().FullName.Contains("HDRenderPipelineAsset"))
+            {
+                return 2;
+            }
+            else if (GraphicsSettings.currentRenderPipeline.GetType().FullName.Contains("UniversalRenderPipelineAsset"))
+            {
+                return 1;
+            }
+
+            return 0;
         }
 
         private void ExtractFiles()
@@ -205,7 +222,7 @@ namespace UQImporter
                 string newName = Path.GetFileName(filePath);
                 string fileExt = Path.GetExtension(filePath);
 
-                if (fileExt.Equals(".fbx", StringComparison.OrdinalIgnoreCase))
+                if (fileExt.Equals(".fbx", System.StringComparison.OrdinalIgnoreCase))
                 {
                     newName = _assetname + fileExt;
                 }
@@ -216,11 +233,13 @@ namespace UQImporter
                         if (filePath.Contains(tkey))
                         {
                             newName = _assetname + "_" + tkey + fileExt;
+                            TextureImporter tImporter = (TextureImporter)AssetImporter.GetAtPath(filePath);
+                            tImporter.isReadable = true;
                             if (newName.Contains("_Normal"))
                             {
-                                TextureImporter tImporter = (TextureImporter)AssetImporter.GetAtPath(filePath);
                                 tImporter.textureType = TextureImporterType.NormalMap;
                             }
+
                             CacheTexture(tkey, (Texture2D)AssetDatabase.LoadAssetAtPath(filePath, typeof(Texture2D)));
                         }
                     }
@@ -236,6 +255,7 @@ namespace UQImporter
         {
             if (!_textures.ContainsKey(key))
             {
+
                 _textures.Add(key, texture);
             }
 
@@ -244,8 +264,7 @@ namespace UQImporter
 
         private void CreateMaterial()
         {
-            int renderPipeline = 2; //CheckRenderPipelineType();
-            switch (renderPipeline)
+            switch (_renderPipeline)
             {
                 case 0:
                     _assetMat = new Material(Shader.Find("Standard"));
@@ -258,23 +277,27 @@ namespace UQImporter
                     break;
             }
 
+            // Populate material properties.
             foreach (KeyValuePair<string, Texture2D> kvp in _textures)
             {
-                string matProperty = GetMatProperty(kvp.Key, renderPipeline);
+                string matProperty = GetMatProperty(kvp.Key, _renderPipeline);
                 if (matProperty != null)
                 {
                     _assetMat.SetTexture(matProperty, kvp.Value);
                 }
-                else
-                {
-                    Debug.LogWarning($"Unkown texture key '{kvp.Key}'");
-                }
+            }
+
+            if (_renderPipeline == 2)
+            {
+                GenerateMaskMap(_textures["Metalness"], _textures["AO"], null, _textures["Roughness"]);
+                Texture2D maskMap = AssetDatabase.LoadAssetAtPath<Texture2D>($"{_destinationPath}/{_assetname}_MaskMap.png");
+                _assetMat.SetTexture("_MaskMap", maskMap);
             }
 
             AssetDatabase.CreateAsset(_assetMat, $"{_destinationPath}/{_assetname}.mat");
             AssetDatabase.SaveAssets();
 
-            LogContext("Creating material with textures...OK");
+            LogContext("Creating material and assigning textures...OK");
         }
 
         private string GetMatProperty(string tKey, int renderPipeline)
@@ -291,20 +314,6 @@ namespace UQImporter
                     Debug.LogWarning("Unsupported render pipeline.");
                     return null;
             }
-        }
-
-        private int CheckRenderPipelineType()
-        {
-            if (GraphicsSettings.currentRenderPipeline.GetType().FullName.Contains("HDRenderPipelineAsset"))
-            {
-                return 2;
-            }
-            else if (GraphicsSettings.currentRenderPipeline.GetType().FullName.Contains("UniversalRenderPipelineAsset"))
-            {
-                return 1;
-            }
-
-            return 0;
         }
 
         private string GetStandardMatProperty(string textureKey)
@@ -341,16 +350,64 @@ namespace UQImporter
         {
             switch (textureKey)
             {
-                case "AO": return "_OcclusionMap";
                 case "BaseColor": return "_BaseColorMap";
-                case "Bump": return "_HeightMap";
-                case "Diffuse": return "_BaseMap";
-                case "Metalness": return "_MetallicGlossMap";
                 case "Normal": return "_NormalMap";
-                case "Roughness": return "_SmoothnessMap";
-                case "Specular": return "_SpecGlossMap";
                 default: return null;
             }
+        }
+
+        private void GenerateMaskMap(Texture2D metallicMap, Texture2D occlusionMap, Texture2D detailMap, Texture2D smoothnessMap)
+        {
+            int resolution = metallicMap.width;
+
+            Texture2D maskMap = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false);
+
+            for (int y = 0; y < resolution; y++)
+            {
+                for (int x = 0; x < resolution; x++)
+                {
+                    Color metallic = metallicMap ? metallicMap.GetPixel(x, y) : Color.black;
+                    Color occlusion = occlusionMap ? occlusionMap.GetPixel(x, y) : Color.white;
+                    Color detail = detailMap ? detailMap.GetPixel(x, y) : Color.white;
+                    Color smoothness = smoothnessMap ? smoothnessMap.GetPixel(x, y) : Color.white;
+
+                    maskMap.SetPixel(x, y, new Color(
+                        metallic.grayscale,
+                        occlusion.grayscale,
+                        detail.grayscale,
+                        smoothness.grayscale
+                    ));
+                }
+            }
+
+            maskMap.Apply();
+            byte[] maskMapBytes = maskMap.EncodeToPNG();
+            string path = $"{_destinationPath}/{_assetname}_MaskMap.png";
+            File.WriteAllBytes(path, maskMapBytes);
+            AssetDatabase.ImportAsset(path);
+
+            LogContext("Generating maskMap...OK");
+        }
+
+        private void UpdateModelImporter()
+        {
+            string path = $"{_destinationPath}/{_assetname}.fbx";
+            ModelImporter mImporter = (ModelImporter)AssetImporter.GetAtPath(path);
+            mImporter.materialImportMode = ModelImporterMaterialImportMode.None;
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+
+            LogContext("Update model importer...OK");
+        }
+
+        private void AttachMaterial()
+        {
+            string modelPath = $"{_destinationPath}/{_assetname}.fbx";
+
+        }
+
+        private void SavePrefab()
+        {
+
         }
 
         private void DrawInvalidObjectGUI()
@@ -471,7 +528,7 @@ namespace UQImporter
                     Debug.LogWarning($"UQImporter: No config.json file found at {configPath}. Loading default configuration.");
                 }
             }
-            catch (Exception exc)
+            catch (System.Exception exc)
             {
                 Debug.LogError("Loading config failed! " + exc);
             }
@@ -493,7 +550,7 @@ namespace UQImporter
                 string configData = JsonUtility.ToJson(new UserConfig(), true);
                 File.WriteAllText($"{filePath}\\config.json", configData);
             }
-            catch (Exception exc)
+            catch (System.Exception exc)
             {
                 Debug.LogError("Create new config file failed! " + exc);
             }
