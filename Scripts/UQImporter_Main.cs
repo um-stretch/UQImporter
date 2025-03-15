@@ -300,6 +300,23 @@ namespace UQImporter
                 _assetMat.SetTexture("_MaskMap", maskMap);
             }
 
+            if (_config.doubleSidedMaterial)
+            {
+                switch (_renderPipeline)
+                {
+                    case 0:
+                        _assetMat.SetInt("_Cull", (int)CullMode.Off);
+                        break;
+                    case 1:
+                        _assetMat.doubleSidedGI = true;
+                        _assetMat.SetInt("_CullMode", (int)CullMode.Off);
+                        break;
+                    case 2:
+                        _assetMat.SetInt("_DoubleSidedEnable", 1);
+                        break;
+                }
+            }
+
             AssetDatabase.CreateAsset(_assetMat, $"{_destinationPath}/{_assetname}.mat");
             AssetDatabase.SaveAssets();
 
