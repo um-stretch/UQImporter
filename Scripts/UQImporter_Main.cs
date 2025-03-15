@@ -17,6 +17,7 @@ namespace UQImporter
         private static Texture2D _moreIcon;
         private static GUIStyle _centeredLabelStyle;
         private string _contextLabel = "";
+        private Object _selection;
 
         private static UserConfig _config;
         private int _renderPipeline = 0;
@@ -117,12 +118,12 @@ namespace UQImporter
 
         private void DrawImporterGUI()
         {
-            var aname = _assetname;
             _contextLabel = "Adjust settings and import.";
 
-            if (System.String.IsNullOrWhiteSpace(_assetname))
+            if (System.String.IsNullOrWhiteSpace(_assetname) || _selection != Selection.activeObject)
             {
                 _assetname = Path.GetFileNameWithoutExtension(_selectedFilePath);
+                _selection = Selection.activeObject;
             }
             if (string.IsNullOrWhiteSpace(_destinationPath))
             {
@@ -144,7 +145,7 @@ namespace UQImporter
                 _destinationPath = EditorUtility.OpenFolderPanel("Choose a destination for imported files", _destinationPath, "");
 
             }
-            if (_config.useNameForDestinationFolder && aname != _assetname)
+            if (_config.useNameForDestinationFolder)
             {
                 _destinationPath = _config.defaultDestinationPath;
                 _destinationPath += "/" + _assetname;
@@ -163,6 +164,7 @@ namespace UQImporter
             {
                 try
                 {
+                    double s = EditorApplication.timeSinceStartup;
                     ClearCachedTextures();
                     GetRenderPipelineType();
                     ExtractFiles();
@@ -173,6 +175,7 @@ namespace UQImporter
                     AttachMaterial();
                     SavePrefab();
                     CleanDirectory();
+                    Debug.Log(System.Math.Round(EditorApplication.timeSinceStartup - s, 2));
                 }
                 catch (System.Exception e)
                 {

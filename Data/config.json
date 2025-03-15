@@ -15,5 +15,5 @@
     ],
     "logContext": false,
     "cleanDirectory": true,
-    "useParallelProcessing": true
+    "enableMultithreading": false
 }
