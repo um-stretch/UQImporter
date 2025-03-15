@@ -66,7 +66,7 @@ namespace UQImporter
 
         private static void GetIcons()
         {
-            _moreIcon = (Texture2D)AssetDatabase.LoadAssetAtPath("Assets/unity-quixel-importer/Icons/moreIcon.png", typeof(Texture2D));
+            _moreIcon = (Texture2D)AssetDatabase.LoadAssetAtPath("Assets/UQImporter/Icons/moreIcon.png", typeof(Texture2D));
         }
 
         private static void RegisterGUIStyles()
@@ -329,7 +329,7 @@ namespace UQImporter
     [System.Serializable]
     public class UserConfig
     {
-        public string pathToUQImporter = "Assets/unity-quixel-importer";
+        public string pathToUQImporter = "Assets/UQImporter";
         public string defaultDestinationPath = "Assets/Quixel";
         public bool useNameForDestinationFolder = true;
         public bool logContext = false;
@@ -353,7 +353,7 @@ namespace UQImporter
 
             try
             {
-                string configPath = $"Assets\\unity-quixel-importer\\Data\\config.json";
+                string configPath = $"Assets\\UQImporter\\Data\\config.json";
 
                 if (File.Exists(configPath))
                 {
@@ -377,7 +377,7 @@ namespace UQImporter
         {
             try
             {
-                string filePath = "Assets\\unity-quixel-importer\\Data";
+                string filePath = "Assets\\UQImporter\\Data";
 
                 if (!Directory.Exists(filePath))
                 {

@@ -1,5 +1,5 @@
 {
-    "pathToUQImporter": "Assets/unity-quixel-importer",
+    "pathToUQImporter": "Assets/UQImporter",
     "defaultDestinationPath": "Assets/Quixel",
     "useNameForDestinationFolder": true,
     "logContext": false,
