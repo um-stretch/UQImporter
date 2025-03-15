@@ -12,36 +12,18 @@ namespace UQImporter
         private static UQImporter_Main _window = null;
         private static Vector2 _windowMinSize = new Vector2(275, 300);
         private static Vector2 _scrollPosition = new Vector2();
+        private static Texture2D _moreIcon;
+        private static GUIStyle _centeredLabelStyle;
+        private string _contextLabel = "";
 
-        private string _contextLabel;
-        private bool _logContext;
+        private static UserConfig _config;
 
         private string _selectedFilePath = "";
         private string _assetname = "";
         private string _destinationPath = "";
-        private bool _useNameForDestinationFolder = true;
-        private string _defaultDestinationPath = "Assets/Quixel";
-
         private string[] _extractedFilePaths;
         private Dictionary<string, Texture2D> _textures = new Dictionary<string, Texture2D>();
-        private string[] _textureKeys = new string[]
-        {
-            "AO",
-            "BaseColor",
-            "Bump",
-            "Cavity",
-            "Diffuse",
-            "Metalness",
-            "Normal",
-            "Roughness",
-            "Specular",
-        };
-
         private Material _assetMat;
-
-        private static Texture2D _infoIcon;
-
-        private static GUIStyle _centeredLabelStyle;
 
         [MenuItem("Tools/Untiy Quixel Importer")]
         public static void OpenUQImporter()
@@ -54,6 +36,8 @@ namespace UQImporter
                 _window.maxSize = _window.minSize;
                 _window.maxSize = new Vector2(10000, 10000);
             }
+
+            _config = UserConfig.LoadUserConfig();
 
             GetIcons();
             RegisterGUIStyles();
@@ -82,7 +66,7 @@ namespace UQImporter
 
         private static void GetIcons()
         {
-            _infoIcon = (Texture2D)AssetDatabase.LoadAssetAtPath("Assets/unity-quixel-importer/Icons/info-circle.png", typeof(Texture2D));
+            _moreIcon = (Texture2D)AssetDatabase.LoadAssetAtPath("Assets/unity-quixel-importer/Icons/moreIcon.png", typeof(Texture2D));
         }
 
         private static void RegisterGUIStyles()
@@ -138,7 +122,7 @@ namespace UQImporter
             }
             if (string.IsNullOrWhiteSpace(_destinationPath))
             {
-                _destinationPath = _defaultDestinationPath;
+                _destinationPath = _config.defaultDestinationPath;
             }
 
             GUILayout.BeginVertical();
@@ -156,15 +140,15 @@ namespace UQImporter
                 _destinationPath = EditorUtility.OpenFolderPanel("Choose a destination for imported files", _destinationPath, "");
 
             }
-            if (_useNameForDestinationFolder && aname != _assetname)
+            if (_config.useNameForDestinationFolder && aname != _assetname)
             {
-                _destinationPath = _defaultDestinationPath;
+                _destinationPath = _config.defaultDestinationPath;
                 _destinationPath += "/" + _assetname;
             }
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             GUILayout.Label(new GUIContent("Use Name for Folder", "If enabled, a folder will be created at the destination directory using the asset's name."));
-            _useNameForDestinationFolder = GUILayout.Toggle(_useNameForDestinationFolder, "", GUILayout.MinWidth(60), GUILayout.MaxWidth(60));
+            _config.useNameForDestinationFolder = GUILayout.Toggle(_config.useNameForDestinationFolder, "", GUILayout.MinWidth(60), GUILayout.MaxWidth(60));
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
@@ -196,20 +180,18 @@ namespace UQImporter
 
         private void ClearCachedTextures()
         {
-            LogContext("Clearing cache...");
             _textures.Clear();
+            LogContext("Clearing cache...OK");
         }
 
         private void ExtractFiles()
         {
-            LogContext("Extracting files....");
             ZipFile.ExtractToDirectory(_selectedFilePath, _destinationPath);
+            LogContext("Extracting files...OK");
         }
 
         private void CacheExtractedFiles()
         {
-            LogContext("Caching extracted files...");
-
             _extractedFilePaths = Directory.GetFiles(_destinationPath);
             for (int i = 0; i < _extractedFilePaths.Length; i++)
             {
@@ -217,12 +199,11 @@ namespace UQImporter
                 _extractedFilePaths[i] = relativePath;
                 AssetDatabase.ImportAsset(_extractedFilePaths[i]);
             }
+            LogContext("Caching extracted files...OK");
         }
 
         private void RenameFiles()
         {
-            LogContext("Renaming files...");
-
             foreach (string filePath in _extractedFilePaths)
             {
                 string newName = Path.GetFileName(filePath);
@@ -234,7 +215,7 @@ namespace UQImporter
                 }
                 else
                 {
-                    foreach (string tkey in _textureKeys)
+                    foreach (string tkey in _config.textureKeys)
                     {
                         if (filePath.Contains(tkey))
                         {
@@ -245,25 +226,23 @@ namespace UQImporter
                 }
 
                 AssetDatabase.RenameAsset(filePath, newName);
+                LogContext("Renaming files...OK");
             }
         }
 
         private void CacheTexture(string key, Texture2D texture)
         {
-            LogContext("Caching textures...");
-
             if (!_textures.ContainsKey(key))
             {
                 _textures.Add(key, texture);
             }
+            LogContext("Caching textures...OK");
         }
 
         private void CreateMaterial()
         {
-            LogContext("Creating material and assigning textures...");
-
             _assetMat = new Material(Shader.Find("Standard"));
-
+            LogContext("Creating material and assigning textures...OK");
         }
 
         private void DrawInvalidObjectGUI()
@@ -281,18 +260,18 @@ namespace UQImporter
 
         private void DrawFooter()
         {
-            Rect infoRect = new Rect(_window.position.width - 30, _window.position.height - 30, _window.position.width, _window.position.height);
+            Rect infoRect = new Rect(_window.position.width - 35, _window.position.height - 30, _window.position.width, _window.position.height);
             GUILayout.BeginArea(infoRect);
-            if (GUILayout.Button(new GUIContent(_infoIcon, "View repository."), GUIStyle.none))
+            if (GUILayout.Button(new GUIContent(_moreIcon, "More..."), GUIStyle.none))
             {
-                Application.OpenURL("https://github.com/um-stretch/unity-quixel-importer/");
+                UQImporter_More.OpenWindow();
             }
             GUILayout.EndArea();
         }
 
         private void LogContext(string context)
         {
-            if (_logContext)
+            if (_config.logContext)
             {
                 Debug.Log(context);
             }
@@ -301,6 +280,120 @@ namespace UQImporter
         private void DrawContextLabel()
         {
             GUILayout.Label(_contextLabel, _centeredLabelStyle);
+        }
+    }
+
+    public class UQImporter_More : EditorWindow
+    {
+        private static UQImporter_More _window;
+        private static Vector2 _windowMinSize = new Vector2(150, 100);
+
+        public static void OpenWindow()
+        {
+            _window = (UQImporter_More)GetWindow(typeof(UQImporter_More), true, "UQImporter (More)");
+
+            if (_window)
+            {
+                _window.Show();
+                _window.maxSize = _windowMinSize;
+                _window.minSize = _windowMinSize;
+
+                // Open window at cursor position 
+                Vector2 mousePos = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+                _window.position = new Rect(mousePos.x, mousePos.y, _window.position.width, _window.position.height);
+            }
+        }
+
+        private void OnGUI()
+        {
+            if (GUILayout.Button(new GUIContent("View repository", "Open UQImporter's repository page.")))
+            {
+                Application.OpenURL("https://github.com/um-stretch/UQImporter/");
+            }
+            GUILayout.Space(10);
+            if (GUILayout.Button(new GUIContent("Create new config", "Create a new config file if the origianl is missing or deleted.")))
+            {
+                if (EditorUtility.DisplayDialog("Create new configuration file", "Previous configuration file (config.json) will be lost.\n\nContinue?", "Yes", "Cancel"))
+                {
+                    UserConfig.CreateConfigFile();
+                }
+            }
+
+            if (EditorWindow.focusedWindow != this)
+            {
+                Close();
+            }
+        }
+    }
+
+    [System.Serializable]
+    public class UserConfig
+    {
+        public string pathToUQImporter = "Assets/unity-quixel-importer";
+        public string defaultDestinationPath = "Assets/Quixel";
+        public bool useNameForDestinationFolder = true;
+        public bool logContext = false;
+        public string[] textureKeys = new string[]
+        {
+            "AO",
+            "BaseColor",
+            "Bump",
+            "Cavity",
+            "Diffuse",
+            "Metalness",
+            "Normal",
+            "Roughness",
+            "Specular",
+        };
+
+
+        public static UserConfig LoadUserConfig()
+        {
+            UserConfig config = new UserConfig();
+
+            try
+            {
+                string configPath = $"Assets\\unity-quixel-importer\\Data\\config.json";
+
+                if (File.Exists(configPath))
+                {
+                    string jsonS = File.ReadAllText(configPath);
+                    config = JsonUtility.FromJson<UserConfig>(jsonS);
+                }
+                else
+                {
+                    Debug.LogWarning($"UQImporter: No config.json file found at {configPath}. Loading default configuration.");
+                }
+            }
+            catch (Exception exc)
+            {
+                Debug.LogError("Loading config failed! " + exc);
+            }
+
+            return config;
+        }
+
+        public static void CreateConfigFile()
+        {
+            try
+            {
+                string filePath = "Assets\\unity-quixel-importer\\Data";
+
+                if (!Directory.Exists(filePath))
+                {
+                    Directory.CreateDirectory(filePath);
+                }
+
+                string configData = JsonUtility.ToJson(new UserConfig(), true);
+                File.WriteAllText($"{filePath}\\config.json", configData);
+            }
+            catch (Exception exc)
+            {
+                Debug.LogError("Create new config file failed! " + exc);
+            }
+
+            AssetDatabase.Refresh();
+            UQImporter_Main.OpenUQImporter();
         }
     }
 }

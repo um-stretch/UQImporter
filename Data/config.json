@@ -1,0 +1,17 @@
+{
+    "pathToUQImporter": "Assets/unity-quixel-importer",
+    "defaultDestinationPath": "Assets/Quixel",
+    "useNameForDestinationFolder": true,
+    "logContext": false,
+    "textureKeys": [
+        "AO",
+        "BaseColor",
+        "Bump",
+        "Cavity",
+        "Diffuse",
+        "Metalness",
+        "Normal",
+        "Roughness",
+        "Specular"
+    ]
+}
