@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 using System.Linq;
+using System;
 
 #if UNITY_EDITOR
 namespace UQImporter
@@ -161,16 +162,23 @@ namespace UQImporter
 
             if (GUILayout.Button(new GUIContent("Import Asset", "Extract, build, and import the selected asset to the above destination."), GUILayout.MinHeight(30)))
             {
-                ClearCachedTextures();
-                GetRenderPipelineType();
-                ExtractFiles();
-                CacheExtractedFiles();
-                RenameFiles();
-                CreateMaterial();
-                UpdateModelImporter();
-                AttachMaterial();
-                SavePrefab();
-                CleanDirectory();
+                try
+                {
+                    ClearCachedTextures();
+                    GetRenderPipelineType();
+                    ExtractFiles();
+                    CacheExtractedFiles();
+                    RenameFiles();
+                    CreateMaterial();
+                    UpdateModelImporter();
+                    AttachMaterial();
+                    SavePrefab();
+                    CleanDirectory();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError("Import failed! " + e);
+                }
 
                 AssetDatabase.Refresh();
             }
