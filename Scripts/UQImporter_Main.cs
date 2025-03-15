@@ -159,22 +159,13 @@ namespace UQImporter
 
             if (GUILayout.Button(new GUIContent("Import Asset", "Extract, build, and import the selected asset to the above destination."), GUILayout.MinHeight(30)))
             {
-                try
-                {
-                    ClearCachedTextures();
-                    ExtractFiles();
-                    CacheExtractedFiles();
-                    RenameFiles();
-                    CreateMaterial();
-                    // Assign material to model
-                    // Save model as prefab
-
-
-                }
-                catch (Exception exc)
-                {
-                    Debug.LogError($"Import failed! {exc}");
-                }
+                ClearCachedTextures();
+                ExtractFiles();
+                CacheExtractedFiles();
+                RenameFiles();
+                CreateMaterial();
+                // Assign material to model
+                // Save model as prefab
 
                 AssetDatabase.Refresh();
             }
@@ -183,7 +174,7 @@ namespace UQImporter
         private void ClearCachedTextures()
         {
             _textures.Clear();
-            
+
             LogContext("Clearing cache...OK");
         }
 
@@ -225,6 +216,11 @@ namespace UQImporter
                         if (filePath.Contains(tkey))
                         {
                             newName = _assetname + "_" + tkey + fileExt;
+                            if (newName.Contains("_Normal"))
+                            {
+                                TextureImporter tImporter = (TextureImporter)AssetImporter.GetAtPath(filePath);
+                                tImporter.textureType = TextureImporterType.NormalMap;
+                            }
                             CacheTexture(tkey, (Texture2D)AssetDatabase.LoadAssetAtPath(filePath, typeof(Texture2D)));
                         }
                     }
@@ -248,12 +244,11 @@ namespace UQImporter
 
         private void CreateMaterial()
         {
-            int renderPipeline = CheckRenderPipelineType();
-
+            int renderPipeline = 2; //CheckRenderPipelineType();
             switch (renderPipeline)
             {
                 case 0:
-                    _assetMat = new Material(Shader.Find("Standard/Lit"));
+                    _assetMat = new Material(Shader.Find("Standard"));
                     break;
                 case 1:
                     _assetMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
@@ -263,11 +258,39 @@ namespace UQImporter
                     break;
             }
 
+            foreach (KeyValuePair<string, Texture2D> kvp in _textures)
+            {
+                string matProperty = GetMatProperty(kvp.Key, renderPipeline);
+                if (matProperty != null)
+                {
+                    _assetMat.SetTexture(matProperty, kvp.Value);
+                }
+                else
+                {
+                    Debug.LogWarning($"Unkown texture key '{kvp.Key}'");
+                }
+            }
 
-            AssetDatabase.CreateAsset(_assetMat, $"{_destinationPath}/NewMat.mat");
+            AssetDatabase.CreateAsset(_assetMat, $"{_destinationPath}/{_assetname}.mat");
             AssetDatabase.SaveAssets();
 
-            LogContext("Creating material and assigning textures...OK");
+            LogContext("Creating material with textures...OK");
+        }
+
+        private string GetMatProperty(string tKey, int renderPipeline)
+        {
+            switch (renderPipeline)
+            {
+                case 0:
+                    return GetStandardMatProperty(tKey);
+                case 1:
+                    return GetURPMatProperty(tKey);
+                case 2:
+                    return GetHDRPMatProperty(tKey);
+                default:
+                    Debug.LogWarning("Unsupported render pipeline.");
+                    return null;
+            }
         }
 
         private int CheckRenderPipelineType()
@@ -282,6 +305,52 @@ namespace UQImporter
             }
 
             return 0;
+        }
+
+        private string GetStandardMatProperty(string textureKey)
+        {
+            switch (textureKey)
+            {
+                case "AO": return "_OcclusionMap";
+                case "BaseColor": return "_MainTex";
+                case "Bump": return "_ParallaxMap";
+                case "Diffuse": return "_MainTex";
+                case "Metalness": return "_MetallicGlossMap";
+                case "Normal": return "_BumpMap";
+                default: return null;
+            }
+        }
+
+        private string GetURPMatProperty(string textureKey)
+        {
+            switch (textureKey)
+            {
+                case "AO": return "_OcclusionMap";
+                case "BaseColor": return "_BaseMap";
+                case "Bump": return "_ParallaxMap";
+                case "Diffuse": return "_BaseMap";
+                case "Metalness": return "_MetallicGlossMap";
+                case "Normal": return "_BumpMap";
+                case "Roughness": return "_SmoothnessMap";
+                case "Specular": return "_SpecGlossMap";
+                default: return null;
+            }
+        }
+
+        private string GetHDRPMatProperty(string textureKey)
+        {
+            switch (textureKey)
+            {
+                case "AO": return "_OcclusionMap";
+                case "BaseColor": return "_BaseColorMap";
+                case "Bump": return "_HeightMap";
+                case "Diffuse": return "_BaseMap";
+                case "Metalness": return "_MetallicGlossMap";
+                case "Normal": return "_NormalMap";
+                case "Roughness": return "_SmoothnessMap";
+                case "Specular": return "_SpecGlossMap";
+                default: return null;
+            }
         }
 
         private void DrawInvalidObjectGUI()
@@ -371,12 +440,12 @@ namespace UQImporter
         public string defaultDestinationPath = "Assets/Quixel";
         public bool useNameForDestinationFolder = true;
         public bool logContext = false;
+        public bool doubleSidedMaterial = true;
         public string[] textureKeys = new string[]
         {
             "AO",
             "BaseColor",
             "Bump",
-            "Cavity",
             "Diffuse",
             "Metalness",
             "Normal",

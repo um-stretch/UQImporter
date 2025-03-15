@@ -3,11 +3,11 @@
     "defaultDestinationPath": "Assets/Quixel",
     "useNameForDestinationFolder": true,
     "logContext": false,
+    "doubleSidedMaterial": true,
     "textureKeys": [
         "AO",
         "BaseColor",
         "Bump",
-        "Cavity",
         "Diffuse",
         "Metalness",
         "Normal",
