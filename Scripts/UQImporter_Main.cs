@@ -5,7 +5,6 @@ using System.IO.Compression;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 using System.Linq;
-using System;
 
 #if UNITY_EDITOR
 namespace UQImporter
@@ -175,7 +174,7 @@ namespace UQImporter
                     SavePrefab();
                     CleanDirectory();
                 }
-                catch (Exception e)
+                catch (System.Exception e)
                 {
                     Debug.LogError("Import failed! " + e);
                 }
