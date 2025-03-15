@@ -4,9 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
-using Unity.VisualScripting;
-using UnityEngine.InputSystem.Interactions;
-using UnityEditor.ShaderGraph;
+using System.Linq;
 
 #if UNITY_EDITOR
 namespace UQImporter
@@ -366,29 +364,33 @@ namespace UQImporter
 
         private void GenerateMaskMap(Texture2D metallicMap, Texture2D occlusionMap, Texture2D detailMap, Texture2D smoothnessMap)
         {
-            int resolution = metallicMap.width;
+            var firstNonNullRef = metallicMap ?? occlusionMap ?? detailMap ?? smoothnessMap;
+            if (firstNonNullRef == null)
+                return;
+
+            int resolution = firstNonNullRef.width;
+
+            Color[] metallicPixels = metallicMap ? metallicMap.GetPixels() : new Color[resolution * resolution];
+            Color[] occlusionPixels = occlusionMap ? occlusionMap.GetPixels() : Enumerable.Repeat(Color.white, resolution * resolution).ToArray();
+            Color[] detailPixels = detailMap ? detailMap.GetPixels() : Enumerable.Repeat(Color.white, resolution * resolution).ToArray();
+            Color[] smoothnessPixels = smoothnessMap ? smoothnessMap.GetPixels() : Enumerable.Repeat(Color.white, resolution * resolution).ToArray();
 
             Texture2D maskMap = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false);
+            Color[] maskPixels = new Color[resolution * resolution];
 
-            for (int y = 0; y < resolution; y++)
+            System.Threading.Tasks.Parallel.For(0, resolution * resolution, i =>
             {
-                for (int x = 0; x < resolution; x++)
-                {
-                    Color metallic = metallicMap ? metallicMap.GetPixel(x, y) : Color.black;
-                    Color occlusion = occlusionMap ? occlusionMap.GetPixel(x, y) : Color.white;
-                    Color detail = detailMap ? detailMap.GetPixel(x, y) : Color.white;
-                    Color smoothness = smoothnessMap ? smoothnessMap.GetPixel(x, y) : Color.white;
+                float metallic = metallicPixels[i].grayscale;
+                float occlusion = occlusionPixels[i].grayscale;
+                float detail = detailPixels[i].grayscale;
+                float smoothness = smoothnessPixels[i].grayscale;
 
-                    maskMap.SetPixel(x, y, new Color(
-                        metallic.grayscale,
-                        occlusion.grayscale,
-                        detail.grayscale,
-                        smoothness.grayscale
-                    ));
-                }
-            }
+                maskPixels[i] = new Color(metallic, occlusion, detail, smoothness);
+            });
 
+            maskMap.SetPixels(maskPixels);
             maskMap.Apply();
+
             byte[] maskMapBytes = maskMap.EncodeToPNG();
             string path = $"{_destinationPath}/{_assetname}_MaskMap.png";
             File.WriteAllBytes(path, maskMapBytes);
