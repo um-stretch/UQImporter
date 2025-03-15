@@ -5,6 +5,8 @@ using System.IO.Compression;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 using Unity.VisualScripting;
+using UnityEngine.InputSystem.Interactions;
+using UnityEditor.ShaderGraph;
 
 #if UNITY_EDITOR
 namespace UQImporter
@@ -25,6 +27,7 @@ namespace UQImporter
         private string _assetname = "";
         private string _destinationPath = "";
         private string[] _extractedFilePaths;
+        private GameObject _modelInstance;
         private Dictionary<string, Texture2D> _textures = new Dictionary<string, Texture2D>();
         private Material _assetMat;
 
@@ -161,7 +164,7 @@ namespace UQImporter
             if (GUILayout.Button(new GUIContent("Import Asset", "Extract, build, and import the selected asset to the above destination."), GUILayout.MinHeight(30)))
             {
                 ClearCachedTextures();
-                _renderPipeline = 2; //GetRenderPipelineType();
+                GetRenderPipelineType();
                 ExtractFiles();
                 CacheExtractedFiles();
                 RenameFiles();
@@ -169,6 +172,7 @@ namespace UQImporter
                 UpdateModelImporter();
                 AttachMaterial();
                 SavePrefab();
+                CleanDirectory();
 
                 AssetDatabase.Refresh();
             }
@@ -178,7 +182,7 @@ namespace UQImporter
         {
             _textures.Clear();
 
-            LogContext("Clearing cache...OK");
+            LogContext("Clear cache...OK");
         }
 
         private int GetRenderPipelineType()
@@ -199,7 +203,7 @@ namespace UQImporter
         {
             ZipFile.ExtractToDirectory(_selectedFilePath, _destinationPath);
 
-            LogContext("Extracting files...OK");
+            LogContext("Extract files...OK");
         }
 
         private void CacheExtractedFiles()
@@ -212,7 +216,7 @@ namespace UQImporter
                 AssetDatabase.ImportAsset(_extractedFilePaths[i]);
             }
 
-            LogContext("Caching extracted files...OK");
+            LogContext("Cache extracted files...OK");
         }
 
         private void RenameFiles()
@@ -247,7 +251,7 @@ namespace UQImporter
 
                 AssetDatabase.RenameAsset(filePath, newName);
 
-                LogContext("Renaming files...OK");
+                LogContext("Rename files...OK");
             }
         }
 
@@ -259,7 +263,7 @@ namespace UQImporter
                 _textures.Add(key, texture);
             }
 
-            LogContext("Caching textures...OK");
+            LogContext("Cache textures...OK");
         }
 
         private void CreateMaterial()
@@ -289,7 +293,11 @@ namespace UQImporter
 
             if (_renderPipeline == 2)
             {
-                GenerateMaskMap(_textures["Metalness"], _textures["AO"], null, _textures["Roughness"]);
+                Texture2D m = _textures.ContainsKey("Metalness") ? _textures["Metalness"] : null;
+                Texture2D o = _textures.ContainsKey("AO") ? _textures["AO"] : null;
+                Texture2D d = _textures.ContainsKey("Detail") ? _textures["Detail"] : null;
+                Texture2D s = _textures.ContainsKey("Roughness") ? _textures["Roughness"] : null;
+                GenerateMaskMap(m, o, d, s);
                 Texture2D maskMap = AssetDatabase.LoadAssetAtPath<Texture2D>($"{_destinationPath}/{_assetname}_MaskMap.png");
                 _assetMat.SetTexture("_MaskMap", maskMap);
             }
@@ -297,7 +305,7 @@ namespace UQImporter
             AssetDatabase.CreateAsset(_assetMat, $"{_destinationPath}/{_assetname}.mat");
             AssetDatabase.SaveAssets();
 
-            LogContext("Creating material and assigning textures...OK");
+            LogContext("Create material and assign textures...OK");
         }
 
         private string GetMatProperty(string tKey, int renderPipeline)
@@ -386,7 +394,7 @@ namespace UQImporter
             File.WriteAllBytes(path, maskMapBytes);
             AssetDatabase.ImportAsset(path);
 
-            LogContext("Generating maskMap...OK");
+            LogContext("Generate maskMap...OK");
         }
 
         private void UpdateModelImporter()
@@ -402,12 +410,67 @@ namespace UQImporter
         private void AttachMaterial()
         {
             string modelPath = $"{_destinationPath}/{_assetname}.fbx";
+            GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
+            _modelInstance = (GameObject)PrefabUtility.InstantiatePrefab(model);
 
+            Renderer r = _modelInstance.GetComponent<Renderer>();
+            r.material = _assetMat;
+
+            LogContext("Attach material...OK");
         }
 
         private void SavePrefab()
         {
+            string prefabPath = $"{_destinationPath}/{_assetname}.prefab";
+            PrefabUtility.SaveAsPrefabAsset(_modelInstance, prefabPath);
+            DestroyImmediate(_modelInstance);
 
+            LogContext("Save prefab...OK");
+        }
+
+
+        private void CleanDirectory()
+        {
+            string[] allFiles = Directory.GetFiles(_destinationPath);
+
+            foreach (string file in allFiles)
+            {
+                string fileName = Path.GetFileName(file);
+                string fileExt = Path.GetExtension(file).ToLower();
+
+                if (fileExt == ".png" || fileExt == ".jpg")
+                {
+                    MoveFile(file, "Textures");
+                }
+                else if (fileExt == ".mat")
+                {
+                    MoveFile(file, "Materials");
+                }
+                else if (fileExt == ".fbx")
+                {
+                    MoveFile(file, "Models");
+                }
+                else if (fileExt != ".prefab")
+                {
+                    MoveFile(file, "Other");
+                }
+            }
+
+            LogContext("Clean directory...OK");
+        }
+
+        private void MoveFile(string file, string folderName)
+        {
+            string newPath = $"{_destinationPath}/{folderName}";
+
+            if (!Directory.Exists(newPath))
+            {
+                Directory.CreateDirectory(newPath);
+                AssetDatabase.Refresh();
+            }
+
+            newPath = $"{newPath}/{Path.GetFileName(file)}";
+            AssetDatabase.MoveAsset(file, newPath);
         }
 
         private void DrawInvalidObjectGUI()
@@ -496,8 +559,9 @@ namespace UQImporter
         public string pathToUQImporter = "Assets/UQImporter";
         public string defaultDestinationPath = "Assets/Quixel";
         public bool useNameForDestinationFolder = true;
-        public bool logContext = false;
         public bool doubleSidedMaterial = true;
+        public bool logContext = false;
+        public bool cleanDirectory = true;
         public string[] textureKeys = new string[]
         {
             "AO",

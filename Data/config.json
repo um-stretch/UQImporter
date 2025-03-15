@@ -2,8 +2,9 @@
     "pathToUQImporter": "Assets/UQImporter",
     "defaultDestinationPath": "Assets/Quixel",
     "useNameForDestinationFolder": true,
-    "logContext": false,
     "doubleSidedMaterial": true,
+    "logContext": false,
+    "cleanDirectory": true,
     "textureKeys": [
         "AO",
         "BaseColor",
