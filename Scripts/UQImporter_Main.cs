@@ -183,18 +183,24 @@ namespace UQImporter
             LogContext("Clear cache...OK");
         }
 
-        private int GetRenderPipelineType()
+        private void GetRenderPipelineType()
         {
-            if (GraphicsSettings.currentRenderPipeline.GetType().FullName.Contains("HDRenderPipelineAsset"))
+            string pipelineAsset = GraphicsSettings.currentRenderPipeline.GetType().FullName;
+            if (GraphicsSettings.currentRenderPipeline != null)
             {
-                return 2;
+                if (pipelineAsset.Contains("HDRenderPipelineAsset"))
+                {
+                    _renderPipeline = 2;
+                }
+                else if (pipelineAsset.Contains("UniversalRenderPipelineAsset"))
+                {
+                    _renderPipeline = 1;
+                }
             }
-            else if (GraphicsSettings.currentRenderPipeline.GetType().FullName.Contains("UniversalRenderPipelineAsset"))
+            else
             {
-                return 1;
+                _renderPipeline = 0;
             }
-
-            return 0;
         }
 
         private void ExtractFiles()
@@ -387,10 +393,10 @@ namespace UQImporter
 
             int resolution = firstNonNullRef.width;
 
-            Color[] metallicPixels = metallicMap ? metallicMap.GetPixels() : new Color[resolution * resolution];
-            Color[] occlusionPixels = occlusionMap ? occlusionMap.GetPixels() : Enumerable.Repeat(Color.white, resolution * resolution).ToArray();
-            Color[] detailPixels = detailMap ? detailMap.GetPixels() : Enumerable.Repeat(Color.white, resolution * resolution).ToArray();
-            Color[] smoothnessPixels = smoothnessMap ? smoothnessMap.GetPixels() : Enumerable.Repeat(Color.white, resolution * resolution).ToArray();
+            Color[] metallicPixels = metallicMap != null ? metallicMap.GetPixels() : new Color[resolution * resolution];
+            Color[] occlusionPixels = occlusionMap != null ? occlusionMap.GetPixels() : Enumerable.Repeat(Color.white, resolution * resolution).ToArray();
+            Color[] detailPixels = detailMap != null ? detailMap.GetPixels() : Enumerable.Repeat(Color.white, resolution * resolution).ToArray();
+            Color[] smoothnessPixels = smoothnessMap != null ? smoothnessMap.GetPixels() : Enumerable.Repeat(Color.white, resolution * resolution).ToArray();
 
             Texture2D maskMap = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false);
             Color[] maskPixels = new Color[resolution * resolution];
