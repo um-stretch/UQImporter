@@ -175,7 +175,8 @@ namespace UQImporter
                     AttachMaterial();
                     SavePrefab();
                     CleanDirectory();
-                    Debug.Log(System.Math.Round(EditorApplication.timeSinceStartup - s, 2));
+
+                    if(_config.logCompletionTime) Debug.Log($"Import successful. Completed in {System.Math.Round(EditorApplication.timeSinceStartup - s, 2)} seconds.");
                 }
                 catch (System.Exception e)
                 {
@@ -183,6 +184,7 @@ namespace UQImporter
                 }
 
                 AssetDatabase.Refresh();
+                if(_config.pingImportedAsset) EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<Object>($"{_destinationPath}/{_assetname}.prefab"));
             }
         }
 
@@ -485,7 +487,6 @@ namespace UQImporter
 
             foreach (string file in allFiles)
             {
-                string fileName = Path.GetFileName(file);
                 string fileExt = Path.GetExtension(file).ToLower();
 
                 if (fileExt == ".png" || fileExt == ".jpg")
@@ -621,6 +622,8 @@ namespace UQImporter
             "Roughness",
             "Specular",
         };
+        public bool logCompletionTime = true;
+        public bool pingImportedAsset = true;
         public bool logContext = false;
         public bool cleanDirectory = true;
         public bool enableMultithreading = false;
