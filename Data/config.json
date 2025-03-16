@@ -1,0 +1,23 @@
+{
+    "pathToUQImporter": "Assets/UQImporter",
+    "defaultDestinationPath": "Assets/Quixel",
+    "useNameForDestinationFolder": true,
+    "doubleSidedMaterial": true,
+    "textureKeys": [
+        "AO",
+        "BaseColor",
+        "Bump",
+        "Diffuse",
+        "Metalness",
+        "Normal",
+        "Opacity",
+        "Roughness",
+        "Specular"
+    ],
+    "logCompletionTime": true,
+    "pingImportedAsset": true,
+    "logContext": false,
+    "cleanDirectory": true,
+    "deleteZipFile": false,
+    "enableMultithreading": false
+}

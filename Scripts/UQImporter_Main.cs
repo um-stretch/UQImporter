@@ -21,6 +21,7 @@ namespace UQImporter
 
         public static UserConfig config { get; private set; }
         private int _renderPipeline = 0;
+        private int _matType = 0;
 
         private string _selectedFilePath = "";
         private string _assetname = "";
@@ -160,7 +161,8 @@ namespace UQImporter
                 try
                 {
                     double s = EditorApplication.timeSinceStartup;
-                    ClearCachedTextures();
+
+                    PrepareImporter();
                     GetRenderPipelineType();
                     ExtractFiles();
                     CacheExtractedFiles();
@@ -185,11 +187,13 @@ namespace UQImporter
             }
         }
 
-        private void ClearCachedTextures()
+        private void PrepareImporter()
         {
             _textures.Clear();
+            _renderPipeline = 0;
+            _matType = 0;
 
-            LogContext("Clear cache...OK");
+            LogContext("Prepare importer...OK");
         }
 
         private void GetRenderPipelineType()
@@ -254,10 +258,9 @@ namespace UQImporter
                             TextureImporter tImporter = (TextureImporter)AssetImporter.GetAtPath(filePath);
                             tImporter.isReadable = true;
                             tImporter.maxTextureSize = 8192;
-                            if (newName.Contains("_Normal"))
-                            {
-                                tImporter.textureType = TextureImporterType.NormalMap;
-                            }
+                            tImporter.textureType = newName.Contains("_Normal") ? TextureImporterType.NormalMap : tImporter.textureType;
+
+                            _matType = newName.Contains("_Opacity") ? 1 : _matType;
 
                             CacheTexture(tkey, (Texture2D)AssetDatabase.LoadAssetAtPath(filePath, typeof(Texture2D)));
                         }
@@ -272,9 +275,8 @@ namespace UQImporter
 
         private void CacheTexture(string key, Texture2D texture)
         {
-            if (!_textures.ContainsKey(key))
+            if (!_textures.ContainsKey(key) && texture != null)
             {
-
                 _textures.Add(key, texture);
             }
 
@@ -312,9 +314,51 @@ namespace UQImporter
                 Texture2D o = _textures.ContainsKey("AO") ? _textures["AO"] : null;
                 Texture2D d = _textures.ContainsKey("Detail") ? _textures["Detail"] : null;
                 Texture2D s = _textures.ContainsKey("Roughness") ? _textures["Roughness"] : null;
+
                 GenerateMaskMap(m, o, d, s);
                 Texture2D maskMap = AssetDatabase.LoadAssetAtPath<Texture2D>($"{_destinationPath}/{_assetname}_MaskMap.png");
+
                 _assetMat.SetTexture("_MaskMap", maskMap);
+            }
+
+            if (_matType == 1)
+            {
+                _assetMat.SetFloat("_SurfaceType", 1);
+                _assetMat.SetFloat("_BlendMode", 0);
+                _assetMat.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+                _assetMat.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+                _assetMat.renderQueue = (int)RenderQueue.Transparent;
+
+                Texture2D bMap = _textures["BaseColor"];
+                Texture2D oMap = _textures["Opacity"];
+
+                Color[] bMapPixels = bMap.GetPixels();
+                Color[] oMapPixels = oMap.GetPixels();
+
+                if (config.enableMultithreading)
+                {
+                    System.Threading.Tasks.Parallel.For(0, bMapPixels.Length - 1, i =>
+                    {
+                        float r = bMapPixels[i].r;
+                        float g = bMapPixels[i].g;
+                        float b = bMapPixels[i].b;
+                        float a = oMapPixels[i].a;
+
+                        bMapPixels[i] = new Color(r, g, b, a);
+                    });
+                }
+                else
+                {
+                    for (int i = 0; i < bMapPixels.Length; i++)
+                    {
+                        bMapPixels[i] = new Color(bMapPixels[i].r, bMapPixels[i].g, bMapPixels[i].b, oMapPixels[i].a);
+                    }
+                }
+
+                Texture2D boMap = new Texture2D(bMap.width, bMap.height);
+                boMap.SetPixels(bMapPixels);
+                boMap.Apply();
+                _textures["BaseColor"] = boMap;
             }
 
             if (config.doubleSidedMaterial)
@@ -393,6 +437,7 @@ namespace UQImporter
                 case "BaseColor": return "_BaseColorMap";
                 case "Bump": return "_HeightMap";
                 case "Normal": return "_NormalMap";
+                case "Opacity": return "_Opacity";
                 default: return null;
             }
         }
@@ -405,10 +450,10 @@ namespace UQImporter
 
             int resolution = firstNonNullRef.width;
 
-            Color[] metallicPixels = metallicMap != null ? metallicMap.GetPixels() : new Color[resolution * resolution];
-            Color[] occlusionPixels = occlusionMap != null ? occlusionMap.GetPixels() : Enumerable.Repeat(Color.white, resolution * resolution).ToArray();
-            Color[] detailPixels = detailMap != null ? detailMap.GetPixels() : Enumerable.Repeat(Color.white, resolution * resolution).ToArray();
-            Color[] smoothnessPixels = smoothnessMap != null ? smoothnessMap.GetPixels() : Enumerable.Repeat(Color.white, resolution * resolution).ToArray();
+            Color[] mPixels = metallicMap != null ? metallicMap.GetPixels() : new Color[resolution * resolution];
+            Color[] oPixels = occlusionMap != null ? occlusionMap.GetPixels() : Enumerable.Repeat(Color.white, resolution * resolution).ToArray();
+            Color[] dPixels = detailMap != null ? detailMap.GetPixels() : Enumerable.Repeat(Color.white, resolution * resolution).ToArray();
+            Color[] sPixels = smoothnessMap != null ? smoothnessMap.GetPixels() : Enumerable.Repeat(Color.white, resolution * resolution).ToArray();
 
             Texture2D maskMap = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false);
             Color[] maskPixels = new Color[resolution * resolution];
@@ -417,24 +462,24 @@ namespace UQImporter
             {
                 System.Threading.Tasks.Parallel.For(0, resolution * resolution, i =>
                 {
-                    float metallic = metallicPixels[i].grayscale;
-                    float occlusion = occlusionPixels[i].grayscale;
-                    float detail = detailPixels[i].grayscale;
-                    float smoothness = smoothnessPixels[i].grayscale;
+                    float m = mPixels[i].grayscale;
+                    float o = oPixels[i].grayscale;
+                    float d = dPixels[i].grayscale;
+                    float s = sPixels[i].grayscale;
 
-                    maskPixels[i] = new Color(metallic, occlusion, detail, smoothness);
+                    maskPixels[i] = new Color(m, o, d, s);
                 });
             }
             else
             {
                 for (int i = 0; i < resolution * resolution; i++)
                 {
-                    float metallic = metallicPixels[i].grayscale;
-                    float occlusion = occlusionPixels[i].grayscale;
-                    float detail = detailPixels[i].grayscale;
-                    float smoothness = smoothnessPixels[i].grayscale;
+                    float m = mPixels[i].grayscale;
+                    float o = oPixels[i].grayscale;
+                    float d = dPixels[i].grayscale;
+                    float s = sPixels[i].grayscale;
 
-                    maskPixels[i] = new Color(metallic, occlusion, detail, smoothness);
+                    maskPixels[i] = new Color(m, o, d, s);
                 }
             }
 
@@ -621,7 +666,7 @@ namespace UQImporter
             }
             if (GUILayout.Button(new GUIContent("Create new config file", "Create a new config file if the origianl is missing or deleted.")))
             {
-                if (EditorUtility.DisplayDialog("Create new configuration file", "Previous configuration file (config.json) will be lost.\n\nContinue?", "Yes", "Cancel"))
+                if (EditorUtility.DisplayDialog("Create new configuration file", "Previous configuration file will be lost.\n\nContinue?", "Yes", "Cancel"))
                 {
                     UserConfig.CreateConfigFile();
                 }
@@ -649,6 +694,7 @@ namespace UQImporter
             "Diffuse",
             "Metalness",
             "Normal",
+            "Opacity",
             "Roughness",
             "Specular",
         };
@@ -656,7 +702,7 @@ namespace UQImporter
         public bool pingImportedAsset = true;
         public bool logContext = false;
         public bool cleanDirectory = true;
-        public bool deleteZipFile = true;
+        public bool deleteZipFile = false;
         public bool enableMultithreading = false;
 
         public static UserConfig LoadUserConfig()
