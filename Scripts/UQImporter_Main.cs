@@ -198,17 +198,14 @@ namespace UQImporter
 
         private void GetRenderPipelineType()
         {
-            string pipelineAsset = GraphicsSettings.currentRenderPipeline.GetType().FullName;
-            if (GraphicsSettings.currentRenderPipeline != null)
+            string pipelineAsset = GraphicsSettings.currentRenderPipeline != null ? GraphicsSettings.currentRenderPipeline.GetType().FullName : "Built-in Render Pipeline";
+            if (pipelineAsset.Contains("HDRenderPipelineAsset"))
             {
-                if (pipelineAsset.Contains("HDRenderPipelineAsset"))
-                {
-                    _renderPipeline = 2;
-                }
-                else if (pipelineAsset.Contains("UniversalRenderPipelineAsset"))
-                {
-                    _renderPipeline = 1;
-                }
+                _renderPipeline = 2;
+            }
+            else if (pipelineAsset.Contains("UniversalRenderPipelineAsset"))
+            {
+                _renderPipeline = 1;
             }
             else
             {
