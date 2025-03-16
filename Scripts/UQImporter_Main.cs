@@ -541,7 +541,7 @@ namespace UQImporter
                 }
                 else if (fileExt == ".fbx")
                 {
-                    MoveFile(file, "Models");
+                    MoveFile(file, "Meshes");
                 }
                 else if (fileExt != ".prefab")
                 {
