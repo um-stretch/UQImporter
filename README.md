@@ -35,18 +35,19 @@ The following items are either in-development, or plan to be added.
 
 ## Config
 The following items can be edited in the config.json file to adjust UQImport to your needs. 
-
-* pathToUQImporter - The path to the local install of UQImporter.
-* defualtDestinationPath - The default path assets will be imported to. Changing this also changes the default text in the Destination text box.
-* useNameForDestinationFolder - If true, the asset will be imported to a folder with its name.
-* doubleSidedMaterial - If true, the asset's material will be set to double-sided.
-* textureKeys - Keys that UQImporter should look for when importing and assigning textures.
-* logCompletionTime - If true, a messaged will be logged into the console showing the time it took to import.
-* pingImportedAsset - If true, the imported asset will be pinged in the Project window.
-* logContext - If true, will enable debugging mode.
-* cleanDirectory - If true, UQImporter will create folders and sort imported items.
-* deleteZipFile - If true, the zip file of the asset will be deleted upon import.
-* enableMultithreading - If true, multithreading will be enabled where applicable.
+```
+pathToUQImporter - The path to the local install of UQImporter.
+defualtDestinationPath - The default path assets will be imported to. Changing this also changes the default text in the Destination text box.
+useNameForDestinationFolder - If true, the asset will be imported to a folder with its name.
+doubleSidedMaterial - If true, the asset's material will be set to double-sided.
+textureKeys - Keys that UQImporter should look for when importing and assigning textures.
+logCompletionTime - If true, a messaged will be logged to the console showing the time it took to import.
+pingImportedAsset - If true, the imported asset will be pinged in the Project window.
+logContext - If true, will enable debugging mode.
+cleanDirectory - If true, UQImporter will create folders and sort imported items.
+deleteZipFile - If true, the zip file of the asset will be deleted upon import.
+enableMultithreading - If true, multithreading will be enabled where applicable.
+```
 
 NOTE: You can ping your local config file by clicking {More>Ping config file} in the UQImporter window.  
 NOTE: You can create a new config file by clicking {More>Create new config file} (this will delete your current config file).
