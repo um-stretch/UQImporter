@@ -31,7 +31,7 @@ namespace UQImporter
         private Dictionary<string, Texture2D> _textures = new Dictionary<string, Texture2D>();
         private Material _assetMat;
 
-        [MenuItem("Tools/Untiy Quixel Importer")]
+        [MenuItem("Tools/UQImporter")]
         public static void OpenUQImporter()
         {
             _window = (UQImporter_Main)GetWindow(typeof(UQImporter_Main), false, "UQImporter");
