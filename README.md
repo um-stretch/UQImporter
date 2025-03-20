@@ -1,6 +1,8 @@
 # Quixel Importer for Unity
 A tool for the Unity engine that allows you to import, build, and texture zipped assets with a single click. UQImporter auto-detects your render pipeline and dynamically adjusts to ensure the asset is properly imported for a single click, drag-and-drop experience.
 
+![UQImporter-Demo](https://github.com/user-attachments/assets/7d913b74-7e20-4a11-b68b-7bd5c0915392)
+
 ### Features
 The following items are fully supported in the current build.
 * Fully import zipped assets with a single click
