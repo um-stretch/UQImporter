@@ -18,6 +18,7 @@ Support for the following items is not currently available, but may be added in 
 * Multi-model, multi-texture assets
 * LODs.
 * Multi-asset importing (only 1 asset can be imported at a time)
+* FBX only.
 
 ### Upcoming Features
 The following items are either in-development, or plan to be added.
