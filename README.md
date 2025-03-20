@@ -48,3 +48,6 @@ The following items can be edited in the config.json file to adjust UQImport to 
 
 NOTE: You can ping your local config file by clicking {More>Ping config file} in the UQImporter window.  
 NOTE: You can create a new config file by clicking {More>Create new config file} (this will delete your current config file).
+
+### Non-Quixel assets:
+Non-Quixel assets have limited support with UQImporter. You must ensure your textures use keywords defined in the config.json file in order for UQImporter to accurately recognize them.
