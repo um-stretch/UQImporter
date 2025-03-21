@@ -33,7 +33,7 @@ The following items are either in-development, or plan to be added.
 2. Open the UQImporter window with menu item: Tools/UQImporter
 3. Select a zipped asset to be imported
 4. (Optional) Change its name and import destination
-5. Click Import
+5. Click Import Asset
 
 ## Config
 
