@@ -146,6 +146,7 @@ namespace UQImporter
                 _destinationPath = EditorUtility.OpenFolderPanel("Choose a destination for imported files", _destinationPath, "");
 
             }
+            
             if (config.useNameForDestinationFolder)
             {
                 _destinationPath = config.defaultDestinationPath;
