@@ -6,7 +6,8 @@ A tool for the Unity engine that allows you to import, build, and texture zipped
 ### Features
 The following items are fully supported in the current build.
 * Fully import zipped assets with a single click
-* Supports 8k textures
+* 8k textures
+* Multithreaded texture generation
 * Auto-detects render pipeline (built-in, URP, HDRP)
 * Supports opaque and transparent materials (transparency requires HDRP, other pipeline support is planned)
 * Automatically generates mask map and transparency map
