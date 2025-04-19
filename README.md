@@ -20,7 +20,7 @@ Support for the following items is not currently available, but may be added in 
 * Double-sided materials require HDRP (other pipeline support is planned)
 * LODs.
 * Multi-asset importing (only 1 asset can be imported at a time)
-* FBX only.
+* FBX only
 
 ### Upcoming Features
 The following items are either in-development, or plan to be added.
