@@ -99,13 +99,12 @@ namespace UQImporter
 
         private bool CheckValidSelectedObject(Object o)
         {
-            if (o == null) return false;
+            if (o == null) 
+                return false;
 
             string objectPath = AssetDatabase.GetAssetPath(o);
             if (string.IsNullOrEmpty(objectPath))
-            {
                 return false;
-            }
 
             string objectFullPath = Path.GetFullPath(objectPath);
             if (Path.GetExtension(objectFullPath).Equals(".zip", System.StringComparison.OrdinalIgnoreCase))
@@ -125,7 +124,8 @@ namespace UQImporter
             {
                 _assetname = Path.GetFileNameWithoutExtension(_selectedFilePath);
                 _selection = Selection.activeObject;
-            }
+            }     
+            
             if (string.IsNullOrWhiteSpace(_destinationPath))
             {
                 _destinationPath = config.defaultDestinationPath;
