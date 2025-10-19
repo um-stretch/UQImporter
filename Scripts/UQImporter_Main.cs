@@ -182,7 +182,8 @@ namespace UQImporter
                 }
 
                 AssetDatabase.Refresh();
-                if (config.pingImportedAsset) EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<Object>($"{_destinationPath}/{_assetname}.prefab"));
+                if (config.pingImportedAsset) 
+                    EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<Object>($"{_destinationPath}/{_assetname}.prefab"));
 
                 ClearCache();
             }
@@ -606,7 +607,7 @@ namespace UQImporter
 
         private void DrawFooter()
         {
-            Rect infoRect = new Rect(_window.position.width - 35, _window.position.height - 30, _window.position.width, _window.position.height);
+            Rect infoRect = new Rect(_window.position.width - 35, _window.position.height - 30, _window.position.width, _window.position.height);            
             GUILayout.BeginArea(infoRect);
             if (GUILayout.Button(new GUIContent(_moreIcon, "More..."), GUIStyle.none))
             {
