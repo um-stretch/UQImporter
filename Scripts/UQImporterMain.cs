@@ -9,9 +9,9 @@ using System.Linq;
 #if UNITY_EDITOR
 namespace UQImporter
 {
-    public class UQImporter_Main : EditorWindow
+    public class UQImporterMain : EditorWindow
     {
-        private static UQImporter_Main _window = null;
+        private static UQImporterMain _window = null;
         private static Vector2 _windowMinSize = new Vector2(275, 225);
         private static Vector2 _scrollPosition = new Vector2();
         private static Texture2D _moreIcon;
@@ -34,7 +34,7 @@ namespace UQImporter
         [MenuItem("Tools/UQImporter")]
         public static void OpenUQImporter()
         {
-            _window = (UQImporter_Main)GetWindow(typeof(UQImporter_Main), false, "UQImporter");
+            _window = (UQImporterMain)GetWindow(typeof(UQImporterMain), false, "UQImporter");
             _window.minSize = _windowMinSize;
 
             if (_window)
@@ -660,7 +660,7 @@ namespace UQImporter
 
             if (GUILayout.Button(new GUIContent("Ping config file", "Ping config file in the project panel.")))
             {
-                EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<Object>($"{UQImporter_Main.config.pathToUQImporter}/Data/config.json"));
+                EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<Object>($"{UQImporterMain.config.pathToUQImporter}/Data/config.json"));
             }
             if (GUILayout.Button(new GUIContent("Create new config file", "Create a new config file if the origianl is missing or deleted.")))
             {
@@ -749,7 +749,7 @@ namespace UQImporter
             }
 
             AssetDatabase.Refresh();
-            UQImporter_Main.OpenUQImporter();
+            UQImporterMain.OpenUQImporter();
         }
     }
 }
